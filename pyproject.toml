@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C90", "PL"]
+ignore = ["PLR2004"] # magic-value comparisons are common in science code
+
+[tool.ruff.lint.pylint]
+max-args = 8

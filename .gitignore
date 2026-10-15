@@ -1,0 +1,18 @@
+﻿.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Downloaded astronomy data and local cache
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Local environment files
+.env
+.env.*
+
+# Keep generated figures only when intentionally reviewed and committed
