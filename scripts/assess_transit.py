@@ -1,9 +1,14 @@
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-DATA = Path("data/processed")
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data" / "processed"
+# Optional dataset variant, e.g. `python scripts/assess_transit.py quality_masked`
+# reads `<mission>_kepler_10_quality_masked.csv` instead of the original CSV.
+SUFFIX = f"_{sys.argv[1]}" if len(sys.argv) > 1 else ""
 PERIOD = 0.837491225
 T0_BJD = 2454964.575
 BJDREF = {"kepler": 2454833.0, "tess": 2457000.0}
@@ -12,7 +17,7 @@ DURATION_HOURS = 1.8
 HALF_DURATION_DAYS = DURATION_HOURS / 48.0
 
 for mission, offset in BJDREF.items():
-    df = pd.read_csv(DATA / f"{mission}_kepler_10.csv")
+    df = pd.read_csv(DATA / f"{mission}_kepler_10{SUFFIX}.csv")
     t = df["time"].to_numpy(float)
     y = df["normalized_flux"].to_numpy(float)
 

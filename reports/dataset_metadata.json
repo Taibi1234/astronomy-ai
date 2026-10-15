@@ -1,0 +1,149 @@
+{
+  "generated_by": "scripts/apply_quality_mask.py",
+  "generated_at_utc": "2026-10-15T09:14:47+00:00",
+  "quality_policy": "Keep only cadences with the mission quality bitmask == 0 (no flags). Flagged cadences (attitude tweaks, safe mode, coarse point, earth point, detector anomalies, etc.) are excluded. Bit definitions: Kepler Archive Manual (SAP_QUALITY) and TESS SPOC Data Products Description (QUALITY). The bits actually present in each file are listed per dataset under quality_bits_observed (measured, not assumed).",
+  "normalization": "normalized_flux = PDCSAP_FLUX / median(PDCSAP_FLUX) computed after removing non-finite rows, matching lightkurve .remove_nans().normalize().",
+  "datasets": {
+    "kepler": {
+      "target": {
+        "name": "Kepler-10",
+        "archive_id": "KIC 11904151",
+        "ra_deg": 285.679391,
+        "dec_deg": 50.2413
+      },
+      "mission": "KEPLER",
+      "quarter": 0,
+      "archive_product": "kplr011904151-2009131105131_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.21 r60196",
+      "cadence_minutes": 29.425,
+      "timesys": "TDB",
+      "time_unit": "d",
+      "time_definition": "Mission-relative BJD (BKJD) = BJD(TDB) - 2454833.0; absolute BJD = time + 2454833.0",
+      "bjdrefi": 2454833.0,
+      "fits_time_range": [
+        120.52892942,
+        130.25561236
+      ],
+      "csv_time_range": [
+        120.5391465105713,
+        130.24539527622983
+      ],
+      "rows": {
+        "fits": 476,
+        "removed_nonfinite": 7,
+        "removed_quality_flagged": 30,
+        "final": 439
+      },
+      "quality_bits_observed": [
+        5,
+        6,
+        7,
+        12,
+        13,
+        15
+      ],
+      "files": {
+        "fits_cache": "data\\raw\\mast_cache\\mastDownload\\Kepler\\kplr011904151_lc_Q111111110111011101\\kplr011904151-2009131105131_llc.fits",
+        "original_csv": "data\\processed\\kepler_kepler_10.csv",
+        "masked_csv": "data\\processed\\kepler_kepler_10_quality_masked.csv"
+      },
+      "original_csv_validation": {
+        "columns": [
+          "time",
+          "normalized_flux"
+        ],
+        "columns_ok": true,
+        "rows": 469,
+        "numeric_dtypes": true,
+        "finite": true,
+        "monotonic_increasing": true,
+        "duplicate_times": 0,
+        "valid": true
+      },
+      "masked_csv_validation": {
+        "columns": [
+          "time",
+          "normalized_flux"
+        ],
+        "columns_ok": true,
+        "rows": 439,
+        "numeric_dtypes": true,
+        "finite": true,
+        "monotonic_increasing": true,
+        "duplicate_times": 0,
+        "valid": true
+      },
+      "download_command": "python scripts/prepare_lightcurves.py"
+    },
+    "tess": {
+      "target": {
+        "name": "Kepler-10",
+        "archive_id": "TIC 377780790",
+        "ra_deg": 285.679421792384,
+        "dec_deg": 50.2413057664223
+      },
+      "mission": "TESS",
+      "sector": 14,
+      "archive_product": "tess2019198215352-s0014-0000000377780790-0150-s_lc.fits",
+      "pipeline": "spoc-5.0.96-20230729",
+      "cadence_minutes": 2.0,
+      "timesys": "TDB",
+      "time_unit": "d",
+      "time_definition": "Mission-relative BJD (TJD) = BJD(TDB) - 2457000.0; absolute BJD = time + 2457000.0",
+      "bjdrefi": 2457000.0,
+      "fits_time_range": [
+        1683.355024053697,
+        1710.20632580189
+      ],
+      "csv_time_range": [
+        1683.3557183832686,
+        1710.2056314767415
+      ],
+      "rows": {
+        "fits": 19337,
+        "removed_nonfinite": 1615,
+        "removed_quality_flagged": 0,
+        "final": 17722
+      },
+      "quality_bits_observed": [
+        2,
+        3,
+        5,
+        7,
+        12
+      ],
+      "files": {
+        "fits_cache": "data\\raw\\mast_cache\\mastDownload\\TESS\\tess2019198215352-s0014-0000000377780790-0150-s\\tess2019198215352-s0014-0000000377780790-0150-s_lc.fits",
+        "original_csv": "data\\processed\\tess_kepler_10.csv",
+        "masked_csv": "data\\processed\\tess_kepler_10_quality_masked.csv"
+      },
+      "original_csv_validation": {
+        "columns": [
+          "time",
+          "normalized_flux"
+        ],
+        "columns_ok": true,
+        "rows": 17722,
+        "numeric_dtypes": true,
+        "finite": true,
+        "monotonic_increasing": true,
+        "duplicate_times": 0,
+        "valid": true
+      },
+      "masked_csv_validation": {
+        "columns": [
+          "time",
+          "normalized_flux"
+        ],
+        "columns_ok": true,
+        "rows": 17722,
+        "numeric_dtypes": true,
+        "finite": true,
+        "monotonic_increasing": true,
+        "duplicate_times": 0,
+        "valid": true
+      },
+      "download_command": "python scripts/prepare_lightcurves.py"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import batman
@@ -13,6 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "processed"
 FIGURES = ROOT / "reports" / "figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
+
+# Optional dataset variant, e.g. `python scripts/fit_transit_model.py quality_masked`
+# reads `<mission>_kepler_10_quality_masked.csv` and writes suffixed figures.
+SUFFIX = f"_{sys.argv[1]}" if len(sys.argv) > 1 else ""
 
 PERIOD = 0.837491225
 EPOCH_BJD = 2454964.575
@@ -43,7 +48,7 @@ def make_transit_model(times, rp, t0):
 
 
 def load_phase_window(mission, bjdref):
-    path = DATA / f"{mission}_kepler_10.csv"
+    path = DATA / f"{mission}_kepler_10{SUFFIX}.csv"
     df = pd.read_csv(path)
 
     time = df["time"].to_numpy(float)
@@ -135,7 +140,7 @@ def fit_mission(mission, bjdref):
     ax.legend()
     fig.tight_layout()
 
-    output = FIGURES / f"{mission}_kepler_10_transit_fit.png"
+    output = FIGURES / f"{mission}_kepler_10{SUFFIX}_transit_fit.png"
     fig.savefig(output, dpi=160)
     plt.close(fig)
     print(f"Saved plot: {output}")

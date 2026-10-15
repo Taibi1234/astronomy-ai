@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -12,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "processed"
 FIGURES = ROOT / "reports" / "figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
+# Optional dataset variant, e.g. `python scripts/phase_fold.py quality_masked`
+# reads `<mission>_kepler_10_quality_masked.csv` and writes suffixed figures.
+SUFFIX = f"_{sys.argv[1]}" if len(sys.argv) > 1 else ""
 
 # NASA Exoplanet Archive: Kepler-10 b, Q1-Q17 DR25 solution.
 PERIOD_DAYS = 0.837491225
@@ -24,7 +28,7 @@ MISSION_BJDREF = {
 }
 
 for mission, bjdref in MISSION_BJDREF.items():
-    path = DATA / f"{mission}_kepler_10.csv"
+    path = DATA / f"{mission}_kepler_10{SUFFIX}.csv"
 
     if not path.exists():
         print(f"Missing input: {path}")
@@ -60,7 +64,7 @@ for mission, bjdref in MISSION_BJDREF.items():
     ax.legend()
     fig.tight_layout()
 
-    output = FIGURES / f"{mission}_kepler_10_ephemeris_folded.png"
+    output = FIGURES / f"{mission}_kepler_10{SUFFIX}_ephemeris_folded.png"
     fig.savefig(output, dpi=160)
     plt.close(fig)
 
