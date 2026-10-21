@@ -1,0 +1,73 @@
+{
+  "method_notes": [
+    "BIC computed under independent-Gaussian likelihood assumption; substantial correlated noise remains (lag-1 AC \u2248 0.94), so effective sample size << n.",
+    "This is a descriptive comparison, not calibrated evidence for detection.",
+    "No uncalibrated p-value or formal detection significance is reported."
+  ],
+  "reference_config": {
+    "dataset": "kepler_all_quarters_quality_masked / detrended",
+    "fixed_geometry": {
+      "a_over_r": 3.4,
+      "inc_deg": 84.5,
+      "u1": 0.3,
+      "u2": 0.2
+    },
+    "period_days": 0.837491225,
+    "t0_bjd": 2454964.575
+  },
+  "model_parameters": {
+    "null_n_params": 2,
+    "transit_n_params": 4,
+    "delta_params": 2
+  },
+  "bic_comparison": {
+    "n_points_approximate": 27111,
+    "rss_null": 0.0011420043742512618,
+    "rss_transit": 0.0010523723406914915,
+    "naive_delta_bic": -2195.582277322706,
+    "assumption_warning": "Independent-Gaussian likelihood is not reliable evidence given the measured correlated noise structure. Effective sample size is lower due to AC. Report for comparison only.",
+    "correlation_context": {
+      "lag1_autocorr_approx": 0.936,
+      "stationarity_ratio_max_min_rms": 7.179,
+      "note": "Residual autocorrelation indicates substantial correlated noise."
+    }
+  },
+  "cross_dataset_summary": {
+    "kepler_all_masked_detrended_depth_ppm": 153.8053709169544,
+    "tess_s14_masked_depth_ppm": 197.39794798546274,
+    "tess_s14_available": false,
+    "new_tess_sectors_downloaded": false,
+    "new_tess_sectors_requested": [
+      40,
+      53,
+      74
+    ],
+    "new_tess_download_status": "Not available (network unavailable); reported, not substituted",
+    "note": [
+      "Cross-dataset comparison limited by unavailable TESS S40/S53/S74 products. Kepler and TESS S14 are evaluated separately; no forced agreement.",
+      "Sector 14 preserved from Phase 1; S40/S53/S74 remain unverified."
+    ]
+  },
+  "limitations_and_conclusions": [
+    "Bootstrap and injection/recovery show stable ~154 ppm depth (95% CI ~150\u2013158 ppm).",
+    "Fixed geometry dominates systematic uncertainty (~\u00b15% depth).",
+    "BIC comparison reported with explicit unmodeled-correlation warning; not a formal detection claim.",
+    "No TESS S40/S53/S74 data available to complete cross-dataset validation.",
+    "Phase 4 does not begin Phase 5 or add ML component."
+  ],
+  "files_changed": [
+    "scripts/phase4_block_bootstrap.py (new)",
+    "scripts/phase4_injection_recovery.py (new)",
+    "scripts/phase4_residual_diagnostics.py (new)",
+    "scripts/statistical_validation.py (modified from existing, preserved)",
+    "reports/results/phase4_block_bootstrap.json (new)",
+    "reports/results/phase4_injection_recovery.json (new)",
+    "reports/results/phase4_statistical_validation.md will be written in reporting step"
+  ],
+  "preservation_check": {
+    "phase3_outputs_preserved": true,
+    "original_data_unchanged": true,
+    "original_figures_untouched": true,
+    "tess_s14_preserved": true
+  }
+}

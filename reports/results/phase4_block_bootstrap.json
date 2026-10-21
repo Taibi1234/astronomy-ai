@@ -1,0 +1,103 @@
+{
+  "method": "residual time-block bootstrap (segment-aware, replacement)",
+  "limitations_documented": "Residual resampling assumes fitted-model structure is correct; misspecified trends propagate. Adding resampled residuals back preserves mean but not full long-range correlation. Not calibrated as formal detection significance (re-detection exercise only).",
+  "assumptions": [
+    "Residuals approximated by fitted-model subtraction (detrended transit model).",
+    "Blocks drawn WITHIN contiguous segments (split at >1d gaps), not across them.",
+    "Segment-aware approach chosen due to nonstationary scatter (seg std varies 0.00006-0.00047)."
+  ],
+  "reference_config": {
+    "dataset": "kepler_all_quarters_quality_masked",
+    "variant": "detrended",
+    "window_hours": 6.0,
+    "fixed_geometry": {
+      "a_over_r": 3.4,
+      "inc_deg": 84.5,
+      "u1": 0.3,
+      "u2": 0.2
+    }
+  },
+  "block_length_sensitivity": {
+    "10": {
+      "n_replicates": 200,
+      "n_converged": 200,
+      "n_failed": 0,
+      "block_length_cadence": 10,
+      "block_length_hours": 4.9,
+      "depth_ppm_mean": 154.1720189507892,
+      "depth_ppm_std": 3.7160502830630278,
+      "depth_ppm_95_interval_ppm": [
+        147.04399059522146,
+        160.6945915643301
+      ],
+      "t0_offset_mean_min": 0.08621422106173496,
+      "t0_offset_std_min": 0.2371769929717632,
+      "seed": 42
+    },
+    "50": {
+      "n_replicates": 200,
+      "n_converged": 200,
+      "n_failed": 0,
+      "block_length_cadence": 50,
+      "block_length_hours": 24.5,
+      "depth_ppm_mean": 154.2158919984045,
+      "depth_ppm_std": 2.2639988378650733,
+      "depth_ppm_95_interval_ppm": [
+        149.45420959092553,
+        158.46156168883215
+      ],
+      "t0_offset_mean_min": 0.09339503108276916,
+      "t0_offset_std_min": 0.26343971444812037,
+      "seed": 42
+    },
+    "100": {
+      "n_replicates": 200,
+      "n_converged": 200,
+      "n_failed": 0,
+      "block_length_cadence": 100,
+      "block_length_hours": 49.0,
+      "depth_ppm_mean": 154.0763841871759,
+      "depth_ppm_std": 2.0669866576532425,
+      "depth_ppm_95_interval_ppm": [
+        149.77664001799207,
+        157.90112805460174
+      ],
+      "t0_offset_mean_min": 0.117262371286263,
+      "t0_offset_std_min": 0.2994309537605896,
+      "seed": 42
+    },
+    "200": {
+      "n_replicates": 200,
+      "n_converged": 200,
+      "n_failed": 0,
+      "block_length_cadence": 200,
+      "block_length_hours": 98.0,
+      "depth_ppm_mean": 154.3808966871816,
+      "depth_ppm_std": 1.9057260884021132,
+      "depth_ppm_95_interval_ppm": [
+        151.24285443420698,
+        158.24999795197365
+      ],
+      "t0_offset_mean_min": 0.08187490981183039,
+      "t0_offset_std_min": 0.35538099039258486,
+      "seed": 42
+    },
+    "500": {
+      "n_replicates": 200,
+      "n_converged": 200,
+      "n_failed": 0,
+      "block_length_cadence": 500,
+      "block_length_hours": 245.0,
+      "depth_ppm_mean": 154.2729641309458,
+      "depth_ppm_std": 1.8673287697567922,
+      "depth_ppm_95_interval_ppm": [
+        150.42654440553446,
+        157.73055926156002
+      ],
+      "t0_offset_mean_min": -0.0258815571599933,
+      "t0_offset_std_min": 0.3771563804208118,
+      "seed": 42
+    }
+  },
+  "generated_by": "scripts/phase4_block_bootstrap.py"
+}

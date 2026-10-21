@@ -1,0 +1,85 @@
+{
+  "method": "Synthetic injection into actual Kepler detrended light curve; noise from observed residuals (replacement sampling)",
+  "limitations_documented": [
+    "Noise drawn by simple replacement from fitted residuals; does not reproduce full temporal correlation exactly.",
+    "Only detrended variant tested (raw-variant sensitivity reported separately if needed).",
+    "Injection uses same fixed geometry as reference; does not test geometry sensitivity.",
+    "Synthetic signal is not the real planet; recovery of synthetic != confirmation of real signal.",
+    "No data leakage between generation and evaluation: synthetic uses same noise pool as reference, but tuning is minimal."
+  ],
+  "tests_performed": [
+    "no-injection control (0 ppm)",
+    "near-measured depth (~154 ppm)",
+    "multiple depths 50-300 ppm"
+  ],
+  "fixed_geometry": {
+    "a_over_r": 3.4,
+    "inc_deg": 84.5
+  },
+  "results": {
+    "0": {
+      "injected_depth_ppm": 0.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 2.749609960847847,
+      "recovered_depth_std_ppm": 2.0433940631291883,
+      "recovered_t0_mean_min": 0.41725111557748645,
+      "bias_ppm": 2.749609960847847
+    },
+    "50": {
+      "injected_depth_ppm": 50.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 50.10315245946111,
+      "recovered_depth_std_ppm": 2.8317253525992108,
+      "recovered_t0_mean_min": -0.019459613665836352,
+      "bias_ppm": 0.10315245946110707
+    },
+    "100": {
+      "injected_depth_ppm": 100.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 99.77940384455555,
+      "recovered_depth_std_ppm": 3.011477601038486,
+      "recovered_t0_mean_min": 0.044799465489030174,
+      "bias_ppm": -0.2205961554444542
+    },
+    "150": {
+      "injected_depth_ppm": 150.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 150.76334601244477,
+      "recovered_depth_std_ppm": 3.2311993225853772,
+      "recovered_t0_mean_min": 0.0015941504408022219,
+      "bias_ppm": 0.7633460124447708
+    },
+    "154": {
+      "injected_depth_ppm": 154.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 154.7636216096983,
+      "recovered_depth_std_ppm": 3.165390086290748,
+      "recovered_t0_mean_min": 0.00787122370131598,
+      "bias_ppm": 0.7636216096983048
+    },
+    "200": {
+      "injected_depth_ppm": 200.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 199.64498251108986,
+      "recovered_depth_std_ppm": 3.5206753826271404,
+      "recovered_t0_mean_min": -0.0669061416909958,
+      "bias_ppm": -0.3550174889101356
+    },
+    "300": {
+      "injected_depth_ppm": 300.0,
+      "n_attempts": 50,
+      "n_success": 50,
+      "recovered_depth_mean_ppm": 299.32382240488755,
+      "recovered_depth_std_ppm": 2.487938319411991,
+      "recovered_t0_mean_min": -0.01950429619277411,
+      "bias_ppm": -0.6761775951124491
+    }
+  },
+  "generated_by": "scripts/phase4_injection_recovery.py"
+}

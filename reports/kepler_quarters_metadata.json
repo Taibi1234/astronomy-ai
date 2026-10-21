@@ -1,0 +1,441 @@
+{
+  "generated_by": "scripts/prepare_kepler_quarters.py",
+  "generated_at_utc": "2026-10-15T15:03:46+00:00",
+  "policy": "Same as apply_quality_mask.py: SAP_QUALITY == 0 and finite TIME/PDCSAP_FLUX; flux normalized by the median of that quarter. Quarters are disjoint in time (verified strictly increasing combined timestamps; no duplicates/overlaps).",
+  "timesys": "TDB",
+  "time_definition": "BKJD = BJD(TDB) - 2454833.0; absolute BJD = time + 2454833.0",
+  "quarters": [
+    {
+      "quarter": 0,
+      "archive_product": "kplr011904151-2009131105131_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.21 r60196",
+      "rows_fits": 476,
+      "removed_nonfinite": 7,
+      "removed_quality_flagged": 30,
+      "rows_final": 439,
+      "time_range": [
+        120.5391465105713,
+        130.24539527622983
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 32,
+      "quality_bits_observed": [
+        5,
+        6,
+        7,
+        12,
+        13,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q00_quality_masked.csv"
+    },
+    {
+      "quarter": 1,
+      "archive_product": "kplr011904151-2009166043257_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.22 r60269",
+      "rows_fits": 1639,
+      "removed_nonfinite": 15,
+      "removed_quality_flagged": 192,
+      "rows_final": 1432,
+      "time_range": [
+        131.51231488081976,
+        164.9833906286949
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 95,
+      "quality_bits_observed": [
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q01_quality_masked.csv"
+    },
+    {
+      "quarter": 2,
+      "archive_product": "kplr011904151-2009259160929_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.22 r60269",
+      "rows_fits": 4354,
+      "removed_nonfinite": 284,
+      "removed_quality_flagged": 674,
+      "rows_final": 3396,
+      "time_range": [
+        169.78537751804106,
+        258.4669835480454
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 518,
+      "quality_bits_observed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q02_quality_masked.csv"
+    },
+    {
+      "quarter": 3,
+      "archive_product": "kplr011904151-2009350155506_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.22 r60269",
+      "rows_fits": 4370,
+      "removed_nonfinite": 236,
+      "removed_quality_flagged": 501,
+      "rows_final": 3633,
+      "time_range": [
+        260.2446439835476,
+        349.49603658242995
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 431,
+      "quality_bits_observed": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q03_quality_masked.csv"
+    },
+    {
+      "quarter": 4,
+      "archive_product": "kplr011904151-2010009091648_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.22 r60269",
+      "rows_fits": 1021,
+      "removed_nonfinite": 13,
+      "removed_quality_flagged": 83,
+      "rows_final": 925,
+      "time_range": [
+        352.3975382855133,
+        373.21904601071583
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 61,
+      "quality_bits_observed": [
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q04_quality_masked.csv"
+    },
+    {
+      "quarter": 5,
+      "archive_product": "kplr011904151-2010174085026_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.23 r60353",
+      "rows_fits": 4634,
+      "removed_nonfinite": 148,
+      "removed_quality_flagged": 427,
+      "rows_final": 4059,
+      "time_range": [
+        443.9199087157758,
+        537.6309727463085
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 335,
+      "quality_bits_observed": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q05_quality_masked.csv"
+    },
+    {
+      "quarter": 6,
+      "archive_product": "kplr011904151-2010265121752_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.24 r60387",
+      "rows_fits": 4398,
+      "removed_nonfinite": 126,
+      "removed_quality_flagged": 467,
+      "rows_final": 3805,
+      "time_range": [
+        539.4700199043655,
+        629.29593724804
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 423,
+      "quality_bits_observed": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q06_quality_masked.csv"
+    },
+    {
+      "quarter": 7,
+      "archive_product": "kplr011904151-2010355172524_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.24 r60387",
+      "rows_fits": 4375,
+      "removed_nonfinite": 149,
+      "removed_quality_flagged": 510,
+      "rows_final": 3716,
+      "time_range": [
+        630.1949738495823,
+        719.5485634582365
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 356,
+      "quality_bits_observed": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q07_quality_masked.csv"
+    },
+    {
+      "quarter": 9,
+      "archive_product": "kplr011904151-2011177032512_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.27 r60460",
+      "rows_fits": 4768,
+      "removed_nonfinite": 159,
+      "removed_quality_flagged": 463,
+      "rows_final": 4146,
+      "time_range": [
+        808.5368768997796,
+        905.9261025353189
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 412,
+      "quality_bits_observed": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q09_quality_masked.csv"
+    },
+    {
+      "quarter": 10,
+      "archive_product": "kplr011904151-2011271113734_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.29 r60484",
+      "rows_fits": 4573,
+      "removed_nonfinite": 132,
+      "removed_quality_flagged": 540,
+      "rows_final": 3901,
+      "time_range": [
+        906.8660422653193,
+        1000.2679756718862
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 394,
+      "quality_bits_observed": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q10_quality_masked.csv"
+    },
+    {
+      "quarter": 11,
+      "archive_product": "kplr011904151-2012004120508_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.29 r60484",
+      "rows_fits": 4754,
+      "removed_nonfinite": 281,
+      "removed_quality_flagged": 759,
+      "rows_final": 3714,
+      "time_range": [
+        1001.2282819599204,
+        1098.3260203189493
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 341,
+      "quality_bits_observed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q11_quality_masked.csv"
+    },
+    {
+      "quarter": 13,
+      "archive_product": "kplr011904151-2012179063303_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.29 r60484",
+      "rows_fits": 4421,
+      "removed_nonfinite": 180,
+      "removed_quality_flagged": 610,
+      "rows_final": 3631,
+      "time_range": [
+        1182.7578379736951,
+        1273.05644987712
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 437,
+      "quality_bits_observed": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q13_quality_masked.csv"
+    },
+    {
+      "quarter": 14,
+      "archive_product": "kplr011904151-2012277125453_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.30 r60510",
+      "rows_fits": 4757,
+      "removed_nonfinite": 488,
+      "removed_quality_flagged": 720,
+      "rows_final": 3549,
+      "time_range": [
+        1274.159866174683,
+        1371.3217153152873
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 588,
+      "quality_bits_observed": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q14_quality_masked.csv"
+    },
+    {
+      "quarter": 15,
+      "archive_product": "kplr011904151-2013011073258_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.31 r60524",
+      "rows_fits": 4780,
+      "removed_nonfinite": 414,
+      "removed_quality_flagged": 332,
+      "rows_final": 4034,
+      "time_range": [
+        1373.5284442579432,
+        1471.1370218650336
+      ],
+      "median_cadence_minutes": 29.424,
+      "intra_quarter_gap_count": 331,
+      "quality_bits_observed": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        12,
+        13,
+        14,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q15_quality_masked.csv"
+    },
+    {
+      "quarter": 17,
+      "archive_product": "kplr011904151-2013131215648_llc.fits",
+      "pipeline": "svn+ssh://murzim/repo/soc/tags/release/9.3.33 r60543",
+      "rows_fits": 1556,
+      "removed_nonfinite": 271,
+      "removed_quality_flagged": 151,
+      "rows_final": 1134,
+      "time_range": [
+        1559.246981401775,
+        1591.0016788740104
+      ],
+      "median_cadence_minutes": 29.425,
+      "intra_quarter_gap_count": 109,
+      "quality_bits_observed": [
+        1,
+        3,
+        5,
+        7,
+        8,
+        13,
+        15
+      ],
+      "csv": "data\\processed\\kepler_q17_quality_masked.csv"
+    }
+  ],
+  "combined": {
+    "csv": "data\\processed\\kepler_all_quarters_quality_masked.csv",
+    "rows": 45514,
+    "time_range": [
+      120.5391465105713,
+      1591.0016788740104
+    ],
+    "inter_quarter_gap_count": 4877,
+    "strictly_increasing_no_overlaps": true
+  }
+}

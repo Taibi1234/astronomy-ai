@@ -4,6 +4,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # Downloaded astronomy data and local cache
 data/raw/*
@@ -14,5 +16,16 @@ data/processed/*
 # Local environment files
 .env
 .env.*
+
+# Agent / assistant tooling state (local only — never published)
+HOME/
+.claude/
+.kimi/
+.rea/
+*.code-workspace
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
 
 # Keep generated figures only when intentionally reviewed and committed

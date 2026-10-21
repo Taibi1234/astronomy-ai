@@ -1,0 +1,45 @@
+{
+  "threshold": 0.4405000426188111,
+  "precision": 0.75,
+  "recall": 0.75,
+  "f1": 0.75,
+  "confusion_matrix": [
+    [
+      2,
+      1
+    ],
+    [
+      1,
+      3
+    ]
+  ],
+  "roc_auc": 0.6666666666666667,
+  "pr_auc": 0.7708333333333333,
+  "n_train": 13,
+  "n_val": 6,
+  "n_test": 7,
+  "positive_train": 6,
+  "negative_train": 7,
+  "positive_test": 4,
+  "negative_test": 3,
+  "feature_list": [
+    "depth_rel_ppm",
+    "contrast_ppm",
+    "mad_scatter",
+    "gap_fraction",
+    "matched_filter_corr",
+    "segment_std_ppm",
+    "mean_flux"
+  ],
+  "segment_metadata_feature_included": "segment_std_ppm (parent segment variability from Phase 4)",
+  "label_source_note": "Synthetic injection only (positive=depth>0 [75,150,225,300 ppm], negative=depth=0). Not real-planet labels.",
+  "split_strategy": "Segment-level split by parent continuous segment (gap >1d split); no overlap between train/val/test.",
+  "synthetic_only_warning": "Performance measured on simulated windows only. Generalization to real observations remains unverified.",
+  "no_discovery_claim": true,
+  "dummy_f1": 0.5714285714285714,
+  "baseline_f1": 0.75,
+  "improvement_vs_dummy_f1": 0.1785714285714286,
+  "rf_f1_validation": 0.8,
+  "rf_selected": false,
+  "rf_f1_test": null
+}

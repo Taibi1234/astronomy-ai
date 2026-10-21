@@ -1,0 +1,15 @@
+{
+  "features": {
+    "depth_rel_ppm": "median - min of normalized flux (approximate depth indicator)",
+    "contrast_ppm": "mean out-of-transit (|phase|>3h) minus mean in-transit (|phase|<=1.8h)",
+    "mad_scatter": "median absolute deviation from median (robust scatter)",
+    "gap_fraction": "fraction of cadences with gap > 0.05 d",
+    "matched_filter_corr": "correlation with batman template (150 ppm depth) at published ephemeris",
+    "segment_std_ppm": "standard deviation of flux within window (includes variability from parent segment)",
+    "mean_flux": "mean normalized flux in window"
+  },
+  "segment_metadata_feature": "segment_std_ppm captures parent-continuous-segment variability (from phase4_residual_diagnostics); it serves as the requested segment-level feature.",
+  "label_source": "simulated injection only (positive=depth>0, negative=depth=0)",
+  "split_method": "segment-level split (same segment ID never appears in both train/test); verified in test_phase5_leakage",
+  "no_real_planet_labels": true
+}

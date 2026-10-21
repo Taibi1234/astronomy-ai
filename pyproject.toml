@@ -8,3 +8,6 @@ ignore = ["PLR2004"] # magic-value comparisons are common in science code
 
 [tool.ruff.lint.pylint]
 max-args = 8
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

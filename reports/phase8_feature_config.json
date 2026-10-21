@@ -1,0 +1,28 @@
+{
+  "features": {
+    "depth_rel_ppm": "median - min of the presented window flux, times 1e6",
+    "contrast_ppm": "mean(|phase|>3h) - mean(|phase|<=1.8h) of presented flux, times 1e6",
+    "mad_scatter": "median absolute deviation of the presented flux",
+    "gap_fraction": "fraction of cadences whose gap exceeds 0.05 d",
+    "matched_filter_corr": "Pearson correlation with a fixed 150 ppm batman template",
+    "segment_std_ppm": "standard deviation of the presented flux, times 1e6",
+    "mean_flux": "mean of the presented flux"
+  },
+  "feature_source": "presented window flux (transit injected when label=1); no label or depth argument",
+  "label_source": "simulated injection only (positive=depth>0, negative=depth=0)",
+  "no_real_planet_labels": true,
+  "split_method": "segment-level; unique segments shuffled with RandomState(42), 50/25/25",
+  "split_seed": 42,
+  "split_groups": {
+    "train": 13,
+    "val": 6,
+    "test": 7
+  },
+  "imputation": {
+    "column": "matched_filter_corr",
+    "rule": "median fitted on TRAIN rows only, applied unchanged to val/test",
+    "value": 0.7877567342112697,
+    "undefined_input_values": 9
+  },
+  "n_windows": 26
+}
