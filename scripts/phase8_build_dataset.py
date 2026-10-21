@@ -1,27 +1,14 @@
+
 """Phase 8 — corrected synthetic dataset builder (WINDOW-LEVEL INPUT SEMANTICS).
 
-Why this script exists
-----------------------
-Phase 5 left two builders worth comparing:
+Features are calculated from the flux presented to the classifier:
+the injected-transit flux for positive windows and unchanged flux for negatives.
 
-* `scripts/phase5_build_dataset.py` (current) injects a synthetic transit into a
-  window, then computes the seven features from `win_flux_dt` — the *pre-injection*
-  flux. For a positive window the classifier is therefore described by a light
-  curve in which the transit that defines its label is absent.
-* `reports/phase5_dataset.json` (saved, frozen) matches an earlier revision that
-  computed the same features from `synthetic` — the flux actually presented.
+The window selection, injection depths, RNG sequence, labels, and split metadata
+are preserved. Undefined Pearson correlations are represented as NaN rather
+than triggering NumPy divide-by-zero or invalid-value warnings.
 
-At inference a classifier sees the observed window. If a transit is present, the
-flux contains it. The correct input is therefore `synthetic` for *both* classes
-(for negatives `synthetic` is an exact copy of `win_flux_dt`, so the two classes
-share one code path). This builder implements that order and nothing else.
-
-Only the feature source changes. Window selection, injection depth draws and the
-RNG call sequence are byte-for-byte those of the Phase 5 builder, so the same 26
-windows and the same injected depths are produced.
-
-Writes `phase8_dataset.json` (path selectable with --out); never touches
-`reports/phase5_dataset.json`.
+This writes phase8_dataset.json and never modifies phase5_dataset.json.
 """
 
 import argparse
@@ -53,36 +40,66 @@ POSITIVE_DEPTHS_PPM = [75, 150, 225, 300]
 NEGATIVE_DEPTH_PPM = 0
 
 
-def extract_features(flux, phase, time):
-    """The seven Phase 5 features, computed from the window flux and nothing else.
+def _safe_correlation(x, y):
+    """Return NaN if Pearson correlation is undefined; otherwise return r."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
 
-    `flux` must be the series the classifier would see (transit included when a
-    transit is present). No label, injected depth, or split information enters
-    this function; its signature is the guarantee.
+    if (
+        x.ndim != 1
+        or y.ndim != 1
+        or x.size != y.size
+        or x.size < 2
+        or not np.all(np.isfinite(x))
+        or not np.all(np.isfinite(y))
+        or np.std(x) == 0
+        or np.std(y) == 0
+    ):
+        return float("nan")
+
+    return float(np.corrcoef(x, y)[0, 1])
+
+
+def extract_features(flux, phase, time):
+    """Extract the seven features from the presented window flux only.
+
+    No label, injected depth, or split information enters this function.
     """
+    flux = np.asarray(flux, dtype=float)
+    phase = np.asarray(phase, dtype=float)
+    time = np.asarray(time, dtype=float)
+
     has_out = bool(np.any(np.abs(phase) > 3 / 24))
     has_in = bool(np.any(np.abs(phase) <= 1.8 / 24))
+
     contrast = (
         float(
-            (np.mean(flux[np.abs(phase) > 3 / 24]) - np.mean(flux[np.abs(phase) <= 1.8 / 24])) * 1e6
+            (
+                np.mean(flux[np.abs(phase) > 3 / 24])
+                - np.mean(flux[np.abs(phase) <= 1.8 / 24])
+            )
+            * 1e6
         )
         if has_out and has_in
         else 0.0
     )
-    corr = (
-        float(
-            np.corrcoef(
-                flux, batman_curve(phase, np.sqrt(150 * 1e-6), 0.0, A_OVER_RSTAR, INCLINATION_DEG)
-            )[0, 1]
-        )
-        if len(flux) > 1
-        else 0.0
+
+    template = batman_curve(
+        phase,
+        np.sqrt(150 * 1e-6),
+        0.0,
+        A_OVER_RSTAR,
+        INCLINATION_DEG,
     )
+    corr = _safe_correlation(flux, template)
+
     return {
         "depth_rel_ppm": float((np.median(flux) - np.min(flux)) * 1e6),
         "contrast_ppm": contrast,
         "mad_scatter": float(np.median(np.abs(flux - np.median(flux)))),
-        "gap_fraction": float(np.sum(np.diff(time) > 0.05) / max(1, len(time) - 1)),
+        "gap_fraction": float(
+            np.sum(np.diff(time) > 0.05) / max(1, len(time) - 1)
+        ),
         "matched_filter_corr": corr,
         "segment_std_ppm": float(np.std(flux) * 1e6),
         "mean_flux": float(np.mean(flux)),
@@ -90,9 +107,11 @@ def extract_features(flux, phase, time):
 
 
 def inject_transit(flux, phase, depth_ppm):
-    """Add a batman transit of the given depth to the window, preserving mean level."""
+    """Add a batman transit of the given depth, preserving mean level."""
     rp = np.sqrt(depth_ppm * 1e-6)
-    signal_model = batman_curve(phase, rp, 0.0, A_OVER_RSTAR, INCLINATION_DEG)
+    signal_model = batman_curve(
+        phase, rp, 0.0, A_OVER_RSTAR, INCLINATION_DEG
+    )
     median_w = float(np.median(flux))
     return flux + median_w * (signal_model - 1.0)
 
@@ -104,10 +123,15 @@ def build(out_dir):
         "variants": [],
     }
     time_all, flux_all = load_dataset(spec)
-    phase_all = fold_phase(time_all, PERIOD, TRANSIT_EPOCH_BJD, BJDREF["kepler"])
+    phase_all = fold_phase(
+        time_all, PERIOD, TRANSIT_EPOCH_BJD, BJDREF["kepler"]
+    )
     flux_dt, _ = detrend_poly(time_all, phase_all, flux_all)
 
-    segments_idx = np.split(np.arange(len(time_all)), np.where(np.diff(time_all) > 1.0)[0] + 1)
+    segments_idx = np.split(
+        np.arange(len(time_all)),
+        np.where(np.diff(time_all) > 1.0)[0] + 1,
+    )
     rng = np.random.default_rng(SEED)
     windows = []
 
@@ -115,10 +139,14 @@ def build(out_dir):
         seg = segments_idx[seg_idx]
         if len(seg) < 100:
             continue
+
         is_positive = seg_idx % 2 == 0
         center_idx_in_seg = rng.integers(0, max(1, len(seg) - 50))
         center_time = time_all[seg[center_idx_in_seg]]
-        window_points_idx = seg[np.abs(time_all[seg] - center_time) <= (WINDOW_HOURS / 24)]
+        window_points_idx = seg[
+            np.abs(time_all[seg] - center_time) <= (WINDOW_HOURS / 24)
+        ]
+
         if len(window_points_idx) < 10:
             continue
 
@@ -128,7 +156,9 @@ def build(out_dir):
 
         if is_positive:
             depth_ppm = float(rng.choice(POSITIVE_DEPTHS_PPM))
-            presented_flux = inject_transit(win_flux_dt, win_phase, depth_ppm)
+            presented_flux = inject_transit(
+                win_flux_dt, win_phase, depth_ppm
+            )
         else:
             depth_ppm = float(NEGATIVE_DEPTH_PPM)
             presented_flux = win_flux_dt.copy()
@@ -147,10 +177,15 @@ def build(out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "generated_by": "scripts/phase8_build_dataset.py",
-        "feature_source": "presented window flux (transit injected when label=1)",
+        "feature_source": (
+            "presented window flux (transit injected when label=1)"
+        ),
         "seed": SEED,
         "window_hours": WINDOW_HOURS,
-        "geometry": {"a_over_r": A_OVER_RSTAR, "inc_deg": INCLINATION_DEG},
+        "geometry": {
+            "a_over_r": A_OVER_RSTAR,
+            "inc_deg": INCLINATION_DEG,
+        },
         "positive_depths_ppm": POSITIVE_DEPTHS_PPM,
         "negative_depth_ppm": NEGATIVE_DEPTH_PPM,
         "n_windows": len(windows),
@@ -158,20 +193,30 @@ def build(out_dir):
         "split_strategy": "segment-level (contiguous blocks split at >1d gaps)",
         "windows": windows,
     }
-    (out_dir / "phase8_dataset.json").write_text(
-        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+
+    output_path = out_dir / "phase8_dataset.json"
+    output_path.write_text(
+        json.dumps(payload, indent=2, allow_nan=True) + "\n",
+        encoding="utf-8",
     )
+
+    n_positive = sum(w["label"] for w in windows)
+    n_negative = sum(1 for w in windows if w["label"] == 0)
+
     print(
         f"Phase 8 dataset: {len(windows)} windows "
-        f"({sum(w['label'] for w in windows)} positive, "
-        f"{sum(1 for w in windows if w['label'] == 0)} negative)"
+        f"({n_positive} positive, {n_negative} negative)"
     )
-    print(f"Output: {out_dir / 'phase8_dataset.json'}")
+    print(f"Output: {output_path}")
     return payload
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default=str(ROOT / "reports"), help="output directory")
+    parser.add_argument(
+        "--out",
+        default=str(ROOT / "reports"),
+        help="output directory",
+    )
     args = parser.parse_args()
     build(Path(args.out))
