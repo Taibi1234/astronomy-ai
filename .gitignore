@@ -17,12 +17,6 @@ data/processed/*
 .env
 .env.*
 
-# Agent / assistant tooling state (local only — never published)
-HOME/
-.claude/
-.kimi/
-.rea/
-*.code-workspace
 
 # OS / editor noise
 .DS_Store
