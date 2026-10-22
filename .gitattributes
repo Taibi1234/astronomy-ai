@@ -1,0 +1,4 @@
+# Frozen Phase 11 inputs are content-addressed by SHA-256 over raw bytes.
+# Preserve their exact bytes on every platform; only the sidecars are plain text.
+reports/phase11_generalization/*.json -text -diff
+reports/phase11_generalization/*.sha256 text eol=lf

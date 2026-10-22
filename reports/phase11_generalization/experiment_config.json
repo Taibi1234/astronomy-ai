@@ -1,0 +1,227 @@
+{
+  "phase": "11a",
+  "status": "frozen plan \u2014 campaign not executed, no model trained",
+  "target": "Kepler-10 b",
+  "unit_of_independence": "kepler quarter",
+  "split": {
+    "quotas": {
+      "train": 7,
+      "val": 3,
+      "test": 5
+    },
+    "seed": 20261022,
+    "assignment": {
+      "Q00": "train",
+      "Q01": "val",
+      "Q02": "test",
+      "Q03": "train",
+      "Q04": "train",
+      "Q05": "train",
+      "Q06": "val",
+      "Q07": "train",
+      "Q09": "test",
+      "Q10": "val",
+      "Q11": "train",
+      "Q13": "test",
+      "Q14": "test",
+      "Q15": "train",
+      "Q17": "test"
+    }
+  },
+  "window": {
+    "primary_days": 5.0,
+    "sensitivity_days": 3.0,
+    "major_gap_days": 1.0,
+    "min_points": 40,
+    "min_duration_fraction": 0.8,
+    "min_transits": 2.0,
+    "selection_rule": "both lengths reported separately; neither selected on test performance"
+  },
+  "injection": {
+    "depths_ppm": [
+      50.0,
+      75.0,
+      100.0,
+      150.0,
+      300.0
+    ],
+    "control_depth_ppm": 0.0,
+    "offset_draws": 2,
+    "offset_half_days": 0.1,
+    "offset_seed": 20261023,
+    "noise_conditions": [
+      "observed",
+      "amplified_x2"
+    ],
+    "formula": "injected = flux + median(flux_window) * (batman_model - 1)"
+  },
+  "null_library": {
+    "target_fpr": 0.05,
+    "calibration_splits": [
+      "train",
+      "val"
+    ],
+    "calibration_rule": "max(3.0, 95th percentile of calibration null S/N) per noise condition",
+    "evaluation_split": "test",
+    "paired_controls_excluded_from": [
+      "calibration",
+      "false-positive rate"
+    ],
+    "fpr_reporting": "count, denominator, Wilson interval and cluster interval; no 1% target"
+  },
+  "ml_ladder": [
+    {
+      "id": "L0_no_skill_all_positive",
+      "kind": "analytic",
+      "features": [],
+      "note": "predicts positive for every window; F1 = 2p/(1+p)"
+    },
+    {
+      "id": "L1_dummy_stratified",
+      "kind": "model",
+      "features": [],
+      "note": "sklearn DummyClassifier(strategy='stratified') on train prevalence"
+    },
+    {
+      "id": "L2_snr_only",
+      "kind": "model",
+      "features": [
+        "snr"
+      ],
+      "note": "matched-filter S/N alone; no ML required"
+    },
+    {
+      "id": "L3_detector_outputs",
+      "kind": "model",
+      "features": [
+        "snr",
+        "depth_est_ppm",
+        "sigma_ppm"
+      ],
+      "note": "detector measurements only, all derived from the presented flux"
+    },
+    {
+      "id": "L4_flux_full",
+      "kind": "model",
+      "features": [
+        "min_depth_ppm",
+        "std_ppm",
+        "mad_ppm",
+        "gap_fraction",
+        "mean_flux",
+        "n_points"
+      ],
+      "note": "Phase 10 features; includes the min_depth_ppm depth proxy and group identifiers"
+    },
+    {
+      "id": "L5_flux_without_depth_proxy",
+      "kind": "model",
+      "features": [
+        "std_ppm",
+        "mad_ppm",
+        "gap_fraction",
+        "mean_flux",
+        "n_points"
+      ],
+      "note": "drops min_depth_ppm only: the pre-registered with/without comparison"
+    },
+    {
+      "id": "L6_flux_clean",
+      "kind": "model",
+      "features": [
+        "std_ppm",
+        "mad_ppm",
+        "mean_flux"
+      ],
+      "note": "drops min_depth_ppm and the per-window group identifiers"
+    },
+    {
+      "id": "L7_detector_plus_clean_flux",
+      "kind": "model",
+      "features": [
+        "snr",
+        "depth_est_ppm",
+        "sigma_ppm",
+        "std_ppm",
+        "mad_ppm",
+        "mean_flux"
+      ],
+      "note": "detector measurements plus group-identifier-free flux features"
+    }
+  ],
+  "forbidden_feature_columns": [
+    "trial_id",
+    "window_id",
+    "quarter",
+    "split",
+    "role",
+    "requested_depth_ppm",
+    "injected",
+    "delta_true_days",
+    "recovered",
+    "detected",
+    "false_positive",
+    "threshold_snr",
+    "valid",
+    "invalid_reason",
+    "timing_error_days"
+  ],
+  "metrics": {
+    "primary": [
+      "roc_auc",
+      "recall_at_calibrated_fpr"
+    ],
+    "secondary": [
+      "pr_auc_with_prevalence",
+      "mcc",
+      "balanced_accuracy",
+      "brier"
+    ],
+    "f1": "reported with prevalence and no-skill value; never used for selection",
+    "intervals": "cluster bootstrap over quarters (BCa, 10000 resamples), k reported",
+    "trial_level_wilson": "orientation only; labelled anti-conservative (design effect ~2)"
+  },
+  "sensitivity": {
+    "primary": "5-day windows",
+    "secondary": [
+      "3-day windows",
+      "exclude short quarters"
+    ],
+    "short_quarter_days": 60.0,
+    "short_quarters": [
+      "Q00",
+      "Q01",
+      "Q04",
+      "Q17"
+    ],
+    "note": "reported separately; the primary window length is never chosen on test performance"
+  },
+  "tess_case_study": {
+    "included_in_split": false,
+    "reason": "one sector is one cluster: descriptive external check only, reported without a confidence interval",
+    "file": "tess_kepler_10.csv",
+    "sha256": "ac582c1cf89996ff54d3d9f9035512f8ae6adb582a8ed5feeb5517cd13838f1f"
+  },
+  "projected_cost": {
+    "primary": {
+      "injection_trials": 2040,
+      "paired_control_trials": 408,
+      "null_trials": 420,
+      "total_detector_trials": 2868,
+      "mean_points_per_trial": 211.6,
+      "seconds_per_trial": 0.0227,
+      "projected_seconds": 65.2,
+      "model": "t = 0.019 s + 1.76e-05 s/point (measured on Phase 10 artifacts)"
+    },
+    "sensitivity": {
+      "injection_trials": 3460,
+      "paired_control_trials": 692,
+      "null_trials": 688,
+      "total_detector_trials": 4840,
+      "mean_points_per_trial": 127.2,
+      "seconds_per_trial": 0.0212,
+      "projected_seconds": 102.8,
+      "model": "t = 0.019 s + 1.76e-05 s/point (measured on Phase 10 artifacts)"
+    }
+  }
+}

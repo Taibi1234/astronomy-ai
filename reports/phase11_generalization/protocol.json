@@ -1,0 +1,270 @@
+{
+  "phase": "11b",
+  "schema_version": 1,
+  "status": "frozen before campaign; no campaign executed at freeze time",
+  "version": "phase11b-protocol-v1",
+  "target": "Kepler-10 b",
+  "unit_of_independence": "kepler quarter",
+  "manifests": {
+    "split.json": "5931f5b4fc7450bb0212391f970748e7c4171c76c27697e85a5507bcfad718c1",
+    "windows_primary.json": "6d8eb4b4efad96ab5a78fab1c396e0367b0801aecd23fb3f07f3347f08d9f599",
+    "windows_sensitivity.json": "b89c6bded0c0b22a446771c9a572d0dafb91fb5ce546d4558ad492b68e7fe060",
+    "null_library.json": "767ff9408c70a9c918ae5de69b0608f16dd461b461ef516cba0ccadc892ad8b8",
+    "experiment_config.json": "43fbddc15c74c6262db9b56652ed393aca0ea4849d6b2f2df072d28079e7b4ce"
+  },
+  "seeds": {
+    "split": 20261022,
+    "offsets": 20261023,
+    "model": 20261025,
+    "bootstrap": 20261024
+  },
+  "features": {
+    "detector_outputs": [
+      "snr",
+      "depth_est_ppm",
+      "sigma_ppm"
+    ],
+    "flux_features": [
+      "min_depth_ppm",
+      "std_ppm",
+      "mad_ppm",
+      "gap_fraction",
+      "mean_flux",
+      "n_points"
+    ],
+    "definitions": {
+      "snr": "matched-filter dip significance from core.detect, computed from flux only",
+      "depth_est_ppm": "matched-filter amplitude converted to ppm",
+      "sigma_ppm": "robust out-of-transit scatter (1.4826 * MAD)",
+      "min_depth_ppm": "median(flux) - min(flux), in ppm (depth proxy)",
+      "std_ppm": "standard deviation of flux, in ppm",
+      "mad_ppm": "median absolute deviation of flux about its median",
+      "gap_fraction": "fraction of cadence gaps > 0.05 d inside the window",
+      "mean_flux": "mean normalized flux of the window",
+      "n_points": "cadence count of the window"
+    },
+    "sets": {
+      "L0_no_skill_all_positive": {
+        "kind": "analytic",
+        "features": [],
+        "note": "predicts positive for every window; F1 = 2p/(1+p)"
+      },
+      "L1_dummy_stratified": {
+        "kind": "model",
+        "features": [],
+        "note": "sklearn DummyClassifier(strategy='stratified') on train prevalence"
+      },
+      "L2_snr_only": {
+        "kind": "model",
+        "features": [
+          "snr"
+        ],
+        "note": "matched-filter S/N alone; no ML required"
+      },
+      "L3_detector_outputs": {
+        "kind": "model",
+        "features": [
+          "snr",
+          "depth_est_ppm",
+          "sigma_ppm"
+        ],
+        "note": "detector measurements only, all derived from the presented flux"
+      },
+      "L4_flux_full": {
+        "kind": "model",
+        "features": [
+          "min_depth_ppm",
+          "std_ppm",
+          "mad_ppm",
+          "gap_fraction",
+          "mean_flux",
+          "n_points"
+        ],
+        "note": "Phase 10 features; includes the min_depth_ppm depth proxy and group identifiers"
+      },
+      "L5_flux_without_depth_proxy": {
+        "kind": "model",
+        "features": [
+          "std_ppm",
+          "mad_ppm",
+          "gap_fraction",
+          "mean_flux",
+          "n_points"
+        ],
+        "note": "drops min_depth_ppm only: the pre-registered with/without comparison"
+      },
+      "L6_flux_clean": {
+        "kind": "model",
+        "features": [
+          "std_ppm",
+          "mad_ppm",
+          "mean_flux"
+        ],
+        "note": "drops min_depth_ppm and the per-window group identifiers"
+      },
+      "L7_detector_plus_clean_flux": {
+        "kind": "model",
+        "features": [
+          "snr",
+          "depth_est_ppm",
+          "sigma_ppm",
+          "std_ppm",
+          "mad_ppm",
+          "mean_flux"
+        ],
+        "note": "detector measurements plus group-identifier-free flux features"
+      }
+    },
+    "primary_model": "L7_detector_plus_clean_flux",
+    "ablation_diagnostic": "L4_flux_full vs L5_flux_without_depth_proxy",
+    "forbidden": [
+      "trial_id",
+      "window_id",
+      "quarter",
+      "split",
+      "role",
+      "requested_depth_ppm",
+      "injected",
+      "delta_true_days",
+      "recovered",
+      "detected",
+      "false_positive",
+      "threshold_snr",
+      "valid",
+      "invalid_reason",
+      "timing_error_days"
+    ]
+  },
+  "preprocessing": {
+    "imputation": "median fitted on train rows only; non-finite median -> 0.0",
+    "constant_feature_drop": "features with zero train variance are dropped and recorded",
+    "scaling": "StandardScaler fitted inside the pipeline on train rows only",
+    "feature_selection": "none; feature sets are frozen in this protocol",
+    "hyperparameter_search": "none",
+    "fit_splits": [
+      "train"
+    ]
+  },
+  "models": {
+    "logistic_regression": {
+      "class": "sklearn.linear_model.LogisticRegression",
+      "params": {
+        "C": 1.0,
+        "max_iter": 1000,
+        "solver": "lbfgs",
+        "class_weight": null,
+        "random_state": 20261025
+      }
+    },
+    "random_forest": {
+      "class": "sklearn.ensemble.RandomForestClassifier",
+      "params": {
+        "n_estimators": 200,
+        "max_depth": 6,
+        "n_jobs": 1,
+        "class_weight": null,
+        "random_state": 20261025
+      }
+    },
+    "dummy": {
+      "class": "sklearn.dummy.DummyClassifier",
+      "params": {
+        "strategy": "stratified",
+        "random_state": 20261025
+      }
+    },
+    "selection": "none; L7 is pre-registered as primary"
+  },
+  "thresholds": {
+    "target_fpr": 0.05,
+    "detector": {
+      "pool": "train+val null windows, per noise condition",
+      "rule": "max(3.0, p95 of calibration null S/N)",
+      "floor_snr": 3.0
+    },
+    "fitted_models": {
+      "pool": "validation null windows only",
+      "rule": "p95 of validation null scores",
+      "floor_snr": null
+    },
+    "percentile_method": "linear",
+    "comparison": "strict '>' (score > threshold means detected)",
+    "tie_rule": "raise the threshold to the next observed score until the calibration exceedance rate is <= target; never lower it below the empirical p95"
+  },
+  "metrics": {
+    "primary": [
+      "roc_auc",
+      "recall_at_calibrated_fpr"
+    ],
+    "secondary": [
+      "pr_auc_with_prevalence",
+      "mcc",
+      "balanced_accuracy",
+      "brier",
+      "precision",
+      "recall"
+    ],
+    "f1": "reported with prevalence and no-skill F1; never used for selection",
+    "no_skill_f1": "2p/(1+p) with p the evaluation prevalence"
+  },
+  "bootstrap": {
+    "method": "BCa",
+    "resamples": 10000,
+    "seed": 20261024,
+    "cluster": "quarter",
+    "percentile_method": "linear",
+    "fallback": "percentile bootstrap if BCa acceleration is undefined",
+    "report": "interval, cluster count k, and resample count"
+  },
+  "test_access": {
+    "reads": 1,
+    "requires": [
+      "protocol.json hash match",
+      "fitted.sha256 match",
+      "manifests hash match"
+    ],
+    "ledger": "test_access.json",
+    "rule": "test rows may be read only after fitted.sha256 exists; the second read raises; campaign generation for test windows also requires the frozen fitted artifact"
+  },
+  "campaign": {
+    "modes": {
+      "smoke": {
+        "quarters": [
+          "Q00",
+          "Q01",
+          "Q04"
+        ],
+        "window_days": 5.0,
+        "split_group": "fit",
+        "note": "train+val only; exercises the pipeline without reading test"
+      },
+      "full": {
+        "window_days": 5.0,
+        "split_groups": [
+          "fit",
+          "test"
+        ]
+      },
+      "sensitivity": {
+        "window_days": 3.0,
+        "split_groups": [
+          "fit",
+          "test"
+        ]
+      }
+    },
+    "order": [
+      "campaign fit (train+val)",
+      "fit models and detector thresholds",
+      "freeze fitted.json + model.pkl + fitted.sha256",
+      "campaign test (test quarters only)",
+      "evaluate test once"
+    ]
+  },
+  "environment": {
+    "python": "3.14.3",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1"
+  }
+}

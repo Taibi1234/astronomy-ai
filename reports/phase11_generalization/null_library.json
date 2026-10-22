@@ -1,0 +1,178 @@
+{
+  "primary": {
+    "phase": "11a",
+    "target_fpr": 0.05,
+    "calibration": {
+      "splits": [
+        "train",
+        "val"
+      ],
+      "quarters": [
+        "Q00",
+        "Q01",
+        "Q03",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q07",
+        "Q10",
+        "Q11",
+        "Q15"
+      ],
+      "null_windows": 67,
+      "null_trials": 268
+    },
+    "test": {
+      "splits": [
+        "test"
+      ],
+      "quarters": [
+        "Q02",
+        "Q09",
+        "Q13",
+        "Q14",
+        "Q17"
+      ],
+      "null_windows": 38,
+      "null_trials": 152
+    },
+    "paired_controls": {
+      "used_for": "paired recovery comparisons only",
+      "excluded_from": [
+        "threshold calibration",
+        "false-positive rate"
+      ],
+      "windows": 102,
+      "trials": 408
+    },
+    "by_split": {
+      "train": {
+        "quarters": [
+          "Q00",
+          "Q03",
+          "Q04",
+          "Q05",
+          "Q07",
+          "Q11",
+          "Q15"
+        ],
+        "null_windows": 46,
+        "null_trials": 184,
+        "injection_windows": 45,
+        "paired_control_trials": 180
+      },
+      "val": {
+        "quarters": [
+          "Q01",
+          "Q06",
+          "Q10"
+        ],
+        "null_windows": 21,
+        "null_trials": 84,
+        "injection_windows": 21,
+        "paired_control_trials": 84
+      },
+      "test": {
+        "quarters": [
+          "Q02",
+          "Q09",
+          "Q13",
+          "Q14",
+          "Q17"
+        ],
+        "null_windows": 38,
+        "null_trials": 152,
+        "injection_windows": 36,
+        "paired_control_trials": 144
+      }
+    }
+  },
+  "sensitivity": {
+    "phase": "11a",
+    "target_fpr": 0.05,
+    "calibration": {
+      "splits": [
+        "train",
+        "val"
+      ],
+      "quarters": [
+        "Q00",
+        "Q01",
+        "Q03",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q07",
+        "Q10",
+        "Q11",
+        "Q15"
+      ],
+      "null_windows": 111,
+      "null_trials": 444
+    },
+    "test": {
+      "splits": [
+        "test"
+      ],
+      "quarters": [
+        "Q02",
+        "Q09",
+        "Q13",
+        "Q14",
+        "Q17"
+      ],
+      "null_windows": 61,
+      "null_trials": 244
+    },
+    "paired_controls": {
+      "used_for": "paired recovery comparisons only",
+      "excluded_from": [
+        "threshold calibration",
+        "false-positive rate"
+      ],
+      "windows": 173,
+      "trials": 692
+    },
+    "by_split": {
+      "train": {
+        "quarters": [
+          "Q00",
+          "Q03",
+          "Q04",
+          "Q05",
+          "Q07",
+          "Q11",
+          "Q15"
+        ],
+        "null_windows": 76,
+        "null_trials": 304,
+        "injection_windows": 75,
+        "paired_control_trials": 300
+      },
+      "val": {
+        "quarters": [
+          "Q01",
+          "Q06",
+          "Q10"
+        ],
+        "null_windows": 35,
+        "null_trials": 140,
+        "injection_windows": 35,
+        "paired_control_trials": 140
+      },
+      "test": {
+        "quarters": [
+          "Q02",
+          "Q09",
+          "Q13",
+          "Q14",
+          "Q17"
+        ],
+        "null_windows": 61,
+        "null_trials": 244,
+        "injection_windows": 63,
+        "paired_control_trials": 252
+      }
+    }
+  }
+}

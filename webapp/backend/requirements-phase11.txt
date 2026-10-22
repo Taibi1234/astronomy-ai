@@ -1,0 +1,24 @@
+# Phase 11 runtime/test environment — PROVISIONAL
+#
+# Captured from the venv that produced the 2026-10-22 smoke run
+# (webapp/backend/.venv/pyvenv.cfg, interpreter Python 3.14.3).
+#
+# Provenance of these versions: read from installed dist-info metadata; the
+# installed wheels are tagged cp314-cp314-win_amd64 (Windows, CPython 3.14).
+#
+# PORTABILITY IS NOT VERIFIED. Wheel availability for other Python versions,
+# platforms (Linux/macOS/arm64) or a fresh machine has not been checked, because
+# this task was offline and installing is prohibited. Treat these pins as a
+# record of one working environment, not as a cross-platform lock. Promoting
+# them to a portable lock requires an approved, network-enabled install test
+# (ideally on Linux) and a re-attested run.
+#
+# Runtime dependencies for the Phase 11 campaign / CLI:
+numpy==2.5.4
+pandas==3.0.6
+scipy==1.18.1
+scikit-learn==1.9.1
+batman-package==2.5.2
+
+# Test-only dependency:
+pytest==9.1.1
