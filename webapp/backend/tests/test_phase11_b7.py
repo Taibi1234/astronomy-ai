@@ -7,6 +7,8 @@ quarter is read, no model is fitted on scientific data and no test artifact is t
 
 from __future__ import annotations
 
+import inspect
+import json
 import sys
 from pathlib import Path
 
@@ -27,6 +29,7 @@ from research import (  # noqa: E402, I001
     phase11_runner as runner,
     phase11_v2 as v2,
 )
+from research import phase11_authz as authz  # noqa: E402
 
 MANIFEST_DIR = gen.project_root() / "reports" / "phase11_generalization"
 REPO_ROOT = gen.project_root()
@@ -63,19 +66,39 @@ def quarters(effective) -> tuple[set[str], set[str]]:
     return b7.protocol_fit_quarters(MANIFEST_DIR, effective)
 
 
-@pytest.fixture
-def authorization(quarters) -> dict:
-    fit, _test = quarters
-    return {
-        "campaign_id": "synthetic-fixture-b7",
+def _write_doc(
+    tmp_path: Path,
+    *,
+    fit: set[str],
+    test: set[str],
+    scope: str = "fit_only",
+    campaign_id: str = "synthetic-fixture-b7",
+    overrides: dict | None = None,
+) -> b7.authz.AuthorizationRef:
+    protocol, _digest = v2.load_protocol_v21(MANIFEST_DIR / v2.AUTHORIZED_PROTOCOL_NAME)
+    doc = {
+        "campaign_id": campaign_id,
         "approver": "test-owner",
         "operator": "test-operator",
         "issued_at": "2026-10-22T00:00:00Z",
-        "scope": "fit_only",
+        "scope": scope,
         "authorized_quarters": sorted(fit),
         "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
+        "manifest_hashes": v2.validate_manifests(MANIFEST_DIR, protocol),
         "single_run_ack": True,
     }
+    if scope == "fit_and_evaluate":
+        doc["authorized_test_quarters"] = sorted(test)
+    doc.update(overrides or {})
+    path = tmp_path / "authorization.json"
+    path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    return authz.AuthorizationRef(path=path, sha256=v2.sha256_file(path), campaign_id=campaign_id)
+
+
+@pytest.fixture
+def authorization(tmp_path, quarters) -> b7.authz.AuthorizationRef:
+    fit, test = quarters
+    return _write_doc(tmp_path, fit=fit, test=test)
 
 
 @pytest.fixture
@@ -104,12 +127,12 @@ def real_fit_frame(effective) -> pd.DataFrame:
 
 def _fit(effective, tmp_path, provenance, authorization, frame, monkeypatch, **overrides):
     monkeypatch.setattr(b7, "build_fit_frame", lambda **kwargs: frame)
+    monkeypatch.setattr(v2, "capture_provenance", lambda *args, **kwargs: provenance)
     arguments = {
         "effective": effective,
         "manifest_dir": MANIFEST_DIR,
         "repo_root": REPO_ROOT,
         "out_dir": tmp_path / "fit",
-        "provenance": provenance,
         "authorization": authorization,
         "model_id": "L7_detector_plus_clean_flux",
     }
@@ -129,33 +152,40 @@ def test_fit_quarters_are_the_designated_ten(quarters):
     assert {"Q00", "Q04"} <= fit
 
 
-def test_authorization_gate(quarters):
-    fit, _test = quarters
-    base = {
-        "campaign_id": "c1",
-        "approver": "owner",
-        "operator": "operator",
-        "issued_at": "2026-10-22T00:00:00Z",
-        "scope": "fit_only",
-        "authorized_quarters": sorted(fit),
-        "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
-        "single_run_ack": True,
-    }
-    b7.assert_fit_authorization(base, fit)
+def test_plain_dictionary_is_refused(effective, tmp_path):
+    def check():
+        b7.fit_real(
+            effective=effective,
+            manifest_dir=MANIFEST_DIR,
+            repo_root=REPO_ROOT,
+            out_dir=tmp_path / "x",
+            authorization={"campaign_id": "plain"},
+        )
 
-    cases = [
-        ({k: v for k, v in base.items() if k != "campaign_id"}, "missing required fields"),
-        ({**base, "campaign_id": "  "}, "must be a non-empty string"),
-        ({**base, "protocol_sha256": "0" * 64}, "protocol pin"),
-        ({**base, "scope": "evaluate_only"}, "does not cover fitting"),
-        ({**base, "single_run_ack": False}, "single-run"),
-        ({**base, "authorized_quarters": sorted(fit)[:-1]}, "does not cover the fit quarters"),
-        ({**base, "authorized_quarters": sorted(fit) + ["Q02"]}, "outside the fit split"),
-        (None, "authorization mapping"),
-    ]
-    for authorization, message in cases:
-        with pytest.raises(phase11.GateError, match=message):
-            b7.assert_fit_authorization(authorization, fit)
+    with pytest.raises(phase11.GateError, match="AuthorizationRef"):
+        check()
+
+
+def test_missing_document_is_refused(quarters, tmp_path, provenance, real_fit_frame, monkeypatch):
+    fit, test = quarters
+    ref = _write_doc(tmp_path, fit=fit, test=test)
+    ref = authz.AuthorizationRef(
+        path=tmp_path / "absent.json", sha256=ref.sha256, campaign_id=ref.campaign_id
+    )
+    calls = []
+    monkeypatch.setattr(phase11, "fit_models", lambda *args, **kwargs: calls.append(args))
+
+    with pytest.raises(phase11.GateError, match="missing"):
+        _fit(
+            effective=_effective_or_skip(),
+            tmp_path=tmp_path,
+            provenance=provenance,
+            authorization=ref,
+            frame=real_fit_frame,
+            monkeypatch=monkeypatch,
+        )
+
+    assert calls == []
 
 
 def test_fit_windows_exclude_test_windows_and_refuse_inconsistency(quarters):
@@ -319,7 +349,6 @@ def test_fit_real_refuses_a_protected_output(
             manifest_dir=MANIFEST_DIR,
             repo_root=REPO_ROOT,
             out_dir=MANIFEST_DIR,
-            provenance=provenance,
             authorization=authorization,
             model_id="L7_detector_plus_clean_flux",
         )
@@ -481,6 +510,71 @@ def test_real_fit_quarter_integrity_matches_the_frozen_manifest(effective, quart
     assert times.size > 0
 
 
+# --- H1: provenance is captured, never trusted ---------------------------------
+
+
+def test_fit_real_has_no_provenance_parameter():
+    parameters = inspect.signature(b7.fit_real).parameters
+
+    assert "provenance" not in parameters
+    with pytest.raises(TypeError):
+        b7.fit_real(
+            effective={},
+            manifest_dir=MANIFEST_DIR,
+            repo_root=REPO_ROOT,
+            out_dir=Path("unused"),
+            authorization=None,
+            provenance={"git": {"dirty": False}},
+        )
+
+
+def test_capture_provenance_uses_the_verified_frozen_hashes(effective, monkeypatch):
+    seen = {}
+
+    def fake_capture(repo_root, **kwargs):
+        seen["repo_root"] = repo_root
+        seen.update(kwargs)
+        return {"protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256, "git": {"dirty": False}}
+
+    monkeypatch.setattr(v2, "capture_provenance", fake_capture)
+    provenance = b7.capture_fit_provenance(MANIFEST_DIR, effective, REPO_ROOT)
+
+    assert provenance["git"]["dirty"] is False
+    assert seen["protocol_sha256"] == v2.AUTHORIZED_PROTOCOL_SHA256
+    assert seen["manifest_hashes"] == v2.validate_manifests(MANIFEST_DIR, effective)
+    assert len(seen["offsets_sha256"]) == 64
+    names = {path.name for path in seen["source_paths"]}
+    assert {"phase11_b7.py", "phase11_b1.py", "phase11_authz.py"} <= names
+
+
+def test_dirty_captured_provenance_is_refused(
+    effective, tmp_path, authorization, real_fit_frame, monkeypatch
+):
+    calls = []
+    monkeypatch.setattr(phase11, "fit_models", lambda *args, **kwargs: calls.append(args))
+    monkeypatch.setattr(
+        v2,
+        "capture_provenance",
+        lambda *args, **kwargs: {
+            "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
+            "git": {"dirty": True, "dirty_paths": [" M research/phase11.py"]},
+        },
+    )
+
+    with pytest.raises(phase11.GateError, match="clean tracked tree"):
+        b7.fit_real(
+            effective=effective,
+            manifest_dir=MANIFEST_DIR,
+            repo_root=REPO_ROOT,
+            out_dir=tmp_path / "fit",
+            authorization=authorization,
+            model_id="L7_detector_plus_clean_flux",
+        )
+
+    assert calls == []
+    assert not (tmp_path / "fit").exists()
+
+
 # --- fitting, freeze, determinism -------------------------------------------
 
 
@@ -510,7 +604,7 @@ def test_fit_real_freezes_the_nine_key_contract(
     for key in ("train_rows", "val_rows", "train_injected"):
         assert reloaded["counts"][key] > 0, key
     assert set(reloaded["detector_thresholds"]) == {"observed", "amplified_x2"}
-    assert reloaded["provenance"] == provenance
+    assert reloaded["provenance"] == {**provenance, "authorization": result["authorization"]}
     assert set(result["calibration_nulls"]["l7"]) == {"observed", "amplified_x2"}
     assert result["fitted_sha256"] == reloaded["_sha256"]
 

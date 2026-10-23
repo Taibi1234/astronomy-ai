@@ -31,13 +31,14 @@ import transit_injection as ti
 
 from . import core, phase11
 from . import generalization as gen
+from . import phase11_authz as authz
 from . import phase11_b1 as b1
 from . import phase11_v2 as v2
 from .features import time_domain_features
 from .phase11 import GateError
 from .phase11_runner import OutputIsolationError, resolve_output_dir
 
-REAL_FIT_SOURCE = "real-campaign-fit-v2"
+REAL_FIT_SOURCE = authz.FIT_SOURCE
 FIT_MISSION = "kepler"
 WINDOW_MANIFEST = "windows_primary.json"
 WINDOW_DAYS = 5.0
@@ -50,17 +51,6 @@ TEST_ARTIFACTS = (
     "test_generation.json",
     "metrics_test.json",
 )
-AUTHORIZATION_FIELDS = (
-    "campaign_id",
-    "approver",
-    "operator",
-    "issued_at",
-    "scope",
-    "authorized_quarters",
-    "protocol_sha256",
-    "single_run_ack",
-)
-AUTHORIZATION_SCOPES = ("fit_only", "fit_and_evaluate")
 REQUIRED_FRAME_COLUMNS = (
     "trial_id",
     "quarter",
@@ -79,49 +69,28 @@ REQUIRED_FRAME_COLUMNS = (
 )
 
 
-# --- authorization and protocol-designated quarters --------------------------
+def b7_test_quarters(manifest_dir: Path, effective: Mapping) -> set[str]:
+    """Test quarters from the frozen split manifest (never read, only named)."""
+    _fit, test = protocol_fit_quarters(manifest_dir, effective)
+    return test
 
 
-def _assert_identity(authorization: Mapping) -> None:
-    for field in ("campaign_id", "approver", "operator", "issued_at"):
-        value = authorization[field]
-        if not isinstance(value, str) or not value.strip():
-            raise GateError(f"authorization field {field!r} must be a non-empty string")
-
-
-def _assert_grant(authorization: Mapping) -> None:
-    if authorization["protocol_sha256"] != v2.AUTHORIZED_PROTOCOL_SHA256:
-        raise GateError("authorization does not bind the authorized protocol pin")
-    scope = authorization["scope"]
-    if scope not in AUTHORIZATION_SCOPES:
-        raise GateError(f"authorization scope {scope!r} does not cover fitting")
-    if authorization["single_run_ack"] is not True:
-        raise GateError("authorization must acknowledge the single-run condition")
-
-
-def _assert_authorized_quarters(quarters: object, fit_quarters: set[str]) -> None:
-    if isinstance(quarters, (str, bytes)) or not isinstance(quarters, Sequence) or not quarters:
-        raise GateError("authorization must list the authorized quarters")
-    named = {str(quarter) for quarter in quarters}
-    foreign = sorted(named - fit_quarters)
-    if foreign:
-        raise GateError(f"authorization names quarters outside the fit split: {foreign}")
-    uncovered = sorted(fit_quarters - named)
-    if uncovered:
-        raise GateError(f"authorization does not cover the fit quarters {uncovered}")
-
-
-def assert_fit_authorization(authorization: object, fit_quarters: set[str]) -> dict:
-    """The fitting authorization must name the frozen fit quarters exactly and grant fitting."""
-    if not isinstance(authorization, Mapping):
-        raise GateError("fit_real requires an authorization mapping; none was supplied")
-    missing = [field for field in AUTHORIZATION_FIELDS if field not in authorization]
-    if missing:
-        raise GateError(f"authorization is missing required fields {missing}")
-    _assert_identity(authorization)
-    _assert_grant(authorization)
-    _assert_authorized_quarters(authorization["authorized_quarters"], fit_quarters)
-    return dict(authorization)
+def _fit_authorization(
+    manifest_dir: Path,
+    effective: Mapping,
+    fit_quarters: set[str],
+    authorization: authz.AuthorizationRef,
+) -> tuple[dict, str]:
+    """Bind the hashed OD-2 document to the frozen manifests and the fit quarter set."""
+    manifests = v2.validate_manifests(Path(manifest_dir), dict(effective))
+    return authz.load_authorization_document(
+        authorization,
+        protocol_sha256=v2.AUTHORIZED_PROTOCOL_SHA256,
+        manifest_hashes=manifests,
+        fit_quarters=fit_quarters,
+        test_quarters=b7_test_quarters(manifest_dir, effective),
+        required_scope="fit",
+    )
 
 
 def protocol_fit_quarters(manifest_dir: Path, effective: Mapping) -> tuple[set[str], set[str]]:
@@ -275,13 +244,9 @@ def _contained_quarter_path(quarter: str, root: Path) -> Path:
     return resolved
 
 
-def _expected_integrity(
-    quarter: str, integrity: Mapping[str, Mapping] | None, loader
-) -> dict | None:
+def _expected_integrity(quarter: str, integrity: Mapping[str, Mapping] | None) -> dict:
     if integrity is None:
-        if loader is None:
-            raise GateError("load_fit_series requires pinned integrity metadata")
-        return None
+        raise GateError("load_fit_series requires pinned integrity metadata")
     expected = integrity.get(quarter)
     if expected is None:
         raise GateError(f"no pinned integrity metadata for the fit quarter {quarter}")
@@ -289,11 +254,8 @@ def _expected_integrity(
 
 
 def _verified_series(
-    quarter: str, resolved: Path, expected: Mapping | None, loader
+    quarter: str, resolved: Path, expected: Mapping | None
 ) -> tuple[np.ndarray, np.ndarray, int]:
-    if loader is not None:
-        times, flux = loader(resolved)
-        return np.asarray(times, dtype=float), np.asarray(flux, dtype=float), 0
     if not resolved.is_file():
         raise GateError(f"fit quarter file is missing: {resolved.name}")
     digest = v2.sha256_file(resolved)
@@ -316,32 +278,42 @@ def _check_pinned_rows(name: str, expected: Mapping | None, points: int, exclude
         )
 
 
-def load_fit_series(
+def load_verified_quarter(
     quarter: str,
     root: Path,
-    fit_quarters: set[str],
+    allowed_quarters: set[str],
     *,
     integrity: Mapping[str, Mapping] | None = None,
-    loader=None,
+    label: str = "fit",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Load one frozen fit quarter after integrity and containment checks.
 
     The quarter file must match the digest pinned in the frozen split manifest, its row count must
     match where pinned, and its resolved path must sit directly in the resolved data root.
-    ``loader`` exists for unit tests only; the production path always supplies ``integrity``.
     """
     phase11.validate_quarter(quarter)
-    if quarter not in fit_quarters:
-        raise GateError(f"quarter {quarter!r} is not a frozen fit quarter; refusing to load it")
-    expected = _expected_integrity(quarter, integrity, loader)
+    if quarter not in allowed_quarters:
+        raise GateError(f"quarter {quarter!r} is not a frozen {label} quarter; refusing to load it")
+    expected = _expected_integrity(quarter, integrity)
     resolved = _contained_quarter_path(quarter, root)
-    times, flux, excluded = _verified_series(quarter, resolved, expected, loader)
+    times, flux, excluded = _verified_series(quarter, resolved, expected)
     if times.size == 0 or times.size != flux.size:
         raise GateError(f"quarter {quarter} did not yield a usable series")
     if not (np.isfinite(times).all() and np.isfinite(flux).all()):
         raise GateError(f"quarter {quarter} contains non-finite values after loading")
     _check_pinned_rows(resolved.name, expected, times.size, excluded)
     return times, flux
+
+
+def load_fit_series(
+    quarter: str,
+    root: Path,
+    fit_quarters: set[str],
+    *,
+    integrity: Mapping[str, Mapping] | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fit-quarter reader; see :func:`load_verified_quarter` for the shared contract."""
+    return load_verified_quarter(quarter, root, fit_quarters, integrity=integrity, label="fit")
 
 
 # --- frame construction ------------------------------------------------------
@@ -363,7 +335,6 @@ def _rows_from_plan(
     fit_quarters: set[str],
     root: Path,
     integrity: Mapping[str, Mapping] | None = None,
-    loader=None,
 ) -> list[dict]:
     cache: dict[str, tuple[np.ndarray, np.ndarray]] = {}
     rows = []
@@ -371,9 +342,7 @@ def _rows_from_plan(
         quarter = str(record["quarter"])
         window = windows_by_key[(quarter, int(record["window_index"]))]
         if quarter not in cache:
-            cache[quarter] = load_fit_series(
-                quarter, root, fit_quarters, integrity=integrity, loader=loader
-            )
+            cache[quarter] = load_fit_series(quarter, root, fit_quarters, integrity=integrity)
         times_all, flux_all = cache[quarter]
         times = np.asarray(times_all[window["start_index"] : window["end_index"]], dtype=float)
         flux = np.asarray(flux_all[window["start_index"] : window["end_index"]], dtype=float)
@@ -466,14 +435,13 @@ def build_fit_frame(
     effective: Mapping,
     manifest_dir: Path,
     root: Path,
-    authorization: Mapping,
-    loader=None,
+    authorization: authz.AuthorizationRef,
     model_id: str | None = None,
 ) -> pd.DataFrame:
     """Build real fit rows from frozen fit quarters only. No test path is ever constructed."""
     b1.assert_approved_protocol(effective, v2.AUTHORIZED_PROTOCOL_SHA256)
     fit_quarters, test_quarters = protocol_fit_quarters(manifest_dir, effective)
-    assert_fit_authorization(authorization, fit_quarters)
+    _fit_authorization(manifest_dir, effective, fit_quarters, authorization)
     windows = fit_windows(manifest_dir, effective, fit_quarters, test_quarters)
     plan = phase11.plan_trials(windows, dict(effective), "fit")
     assert_plan_fit_only(plan, fit_quarters, test_quarters)
@@ -487,7 +455,6 @@ def build_fit_frame(
             fit_quarters=fit_quarters,
             root=Path(root),
             integrity=integrity,
-            loader=loader,
         )
     )
     assert_fit_frame(frame, effective, fit_quarters)
@@ -497,6 +464,43 @@ def build_fit_frame(
 
 
 # --- gated fit and freeze ----------------------------------------------------
+
+
+FIT_SOURCE_FILES = (
+    "features.py",
+    "phase11_authz.py",
+    "phase11_b1.py",
+    "phase11_b2a.py",
+    "phase11_b7.py",
+    "phase11_runner.py",
+    "phase11_v2.py",
+    "safeguards.py",
+    "test_access.py",
+)
+
+
+def _fit_source_paths() -> list[Path]:
+    source_dir = Path(__file__).resolve().parent
+    paths = [source_dir / name for name in FIT_SOURCE_FILES]
+    missing = [path.name for path in paths if not path.is_file()]
+    if missing:
+        raise GateError(f"fit source artifacts are missing: {missing}")
+    return paths
+
+
+def capture_fit_provenance(manifest_dir: Path, effective: Mapping, repo_root: Path) -> dict:
+    """Capture provenance from the repository itself; never trust a caller-supplied block."""
+    manifest_hashes = v2.validate_manifests(Path(manifest_dir), dict(effective))
+    _offsets, offsets_sha256 = v2.load_frozen_offsets(Path(manifest_dir), dict(effective))
+    provenance = v2.capture_provenance(
+        Path(repo_root),
+        source_paths=_fit_source_paths(),
+        protocol_sha256=v2.AUTHORIZED_PROTOCOL_SHA256,
+        manifest_hashes=manifest_hashes,
+        offsets_sha256=offsets_sha256,
+    )
+    v2.require_clean_tree(provenance)
+    return provenance
 
 
 def _assert_no_test_exposure(out_dir: Path) -> None:
@@ -521,27 +525,27 @@ def fit_real(
     manifest_dir: Path,
     repo_root: Path,
     out_dir: Path,
-    provenance: Mapping,
-    authorization: Mapping,
-    loader=None,
+    authorization: authz.AuthorizationRef,
     model_id: str | None = None,
 ) -> dict:
     """Fit and freeze the real fitted state. No marker, trial or test access is created."""
     b1.assert_approved_protocol(effective, v2.AUTHORIZED_PROTOCOL_SHA256)
     fit_quarters, _test_quarters = protocol_fit_quarters(manifest_dir, effective)
-    assert_fit_authorization(authorization, fit_quarters)
+    document, authorization_digest = _fit_authorization(
+        manifest_dir, effective, fit_quarters, authorization
+    )
     _assert_no_test_exposure(out_dir)
     _assert_no_test_exposure(manifest_dir)
     out = resolve_output_dir(Path(out_dir), manifest_dir=manifest_dir, repo_root=repo_root)
-    protocol_hash = b1.assert_approved_provenance(provenance, effective)
-    v2.require_clean_tree(provenance)
+    provenance = capture_fit_provenance(manifest_dir, effective, repo_root)
+    binding = authz.authorization_binding(document, authorization_digest)
+    bound_provenance = {**provenance, "authorization": binding}
 
     frame = build_fit_frame(
         effective=effective,
         manifest_dir=manifest_dir,
         root=Path(repo_root),
         authorization=authorization,
-        loader=loader,
         model_id=model_id,
     )
     # Defence in depth: the frame is re-asserted here so a replacement or patched builder cannot
@@ -572,10 +576,10 @@ def fit_real(
         model=fitted["model"],
         trials=frame,
         protocol=dict(effective),
-        protocol_hash=protocol_hash,
-        provenance=dict(provenance),
+        protocol_hash=v2.AUTHORIZED_PROTOCOL_SHA256,
+        provenance=bound_provenance,
     )
-    reloaded = v2.load_fitted_v21(out, protocol_hash)
+    reloaded = v2.load_fitted_v21(out, v2.AUTHORIZED_PROTOCOL_SHA256)
     return {
         "mode": "real_fit",
         "model_id": resolved_model,
@@ -604,6 +608,7 @@ def fit_real(
         "artifacts": artifacts,
         "thresholds": v2.stratum_table(thresholds),
         "fitted_sha256": reloaded["_sha256"],
+        "authorization": binding,
     }
 
 
