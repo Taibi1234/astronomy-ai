@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 from . import generalization as gen
-from . import phase11
+from . import phase11, safeguards
 
 SMOKE_TRAIN_QUARTERS = ("Q00", "Q04")
 SMOKE_VAL_QUARTERS = ("Q01",)
@@ -92,6 +92,11 @@ def run_smoke(
     plan = preflight(manifest_dir, out_dir)
     if not execute:
         return {"executed": False, **plan}
+
+    try:
+        safeguards.assert_safe_output(out_dir, root=gen.project_root(), purpose="phase11 smoke CLI")
+    except safeguards.SafeguardError as exc:
+        raise phase11.GateError(str(exc)) from exc
 
     campaign = campaign_fn or phase11.run_campaign
     fit = fit_fn or phase11.fit_models
@@ -180,7 +185,11 @@ def main(argv: list[str] | None = None) -> int:
         else gen.project_root() / "reports" / "phase11_generalization"
     )
     out_dir = Path(args.out) if args.out else manifest_dir / "smoke"
-    result = run_smoke(manifest_dir, out_dir, execute=args.execute)
+    try:
+        result = run_smoke(manifest_dir, out_dir, execute=args.execute)
+    except phase11.GateError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 3
     print(json.dumps(result, indent=2))
     return 0
 

@@ -48,8 +48,10 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from . import core
+from . import core, safeguards, test_access
 from . import generalization as gen
+from .errors import GateError
+from .features import time_domain_features  # re-export: shared builder, design §5.1
 
 PROTOCOL_VERSION = "phase11b-protocol-v1"
 OFFSETS_VERSION = "phase11b-offsets-v1"
@@ -120,8 +122,8 @@ DETECTOR_REPORT_SPEC = {
 }
 
 
-class GateError(RuntimeError):
-    """Raised when a leakage or freeze-order gate is violated."""
+# GateError is imported from ``research.errors`` so the one-shot access state machine can
+# raise the same exception class without importing this module (which would be a cycle).
 
 
 # --- stage 0: protocol -------------------------------------------------------
@@ -390,6 +392,10 @@ def write_json_with_sidecar(path: Path, payload: dict) -> str:
 
 def write_stage0(out_dir: Path, manifest_dir: Path) -> dict[str, str]:
     """Write protocol/offsets plus sha256 sidecars; return the hashes."""
+    safeguards.assert_not_protected_directory(
+        out_dir, root=gen.project_root(), purpose="write_stage0"
+    )
+    safeguards.assert_no_campaign_state(out_dir, purpose="write_stage0")
     artifacts = build_stage0(manifest_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     return {
@@ -979,28 +985,29 @@ def evaluate_test(
     )
     assert_protocol_manifests(protocol, manifest_dir)
     fitted = load_fitted(out_dir, protocol_hash)
-    if (out_dir / "test_access.json").is_file():
-        raise GateError("test has already been evaluated once (see test_access.json)")
+    if fitted.get("schema_version") == 2:
+        raise GateError(
+            "a protocol v2 fitted state must be evaluated by the v2 evaluator, not this "
+            "legacy path"
+        )
+
+    # Exclusive, cross-process claim. It is acquired before any test row is touched and is
+    # never released: an interrupted or failed evaluation leaves 'started' on disk, which
+    # is terminal evidence and blocks every later attempt.
+    test_access.claim_access(
+        out_dir,
+        {
+            "evaluator": "legacy-v1",
+            "protocol_sha256": protocol_hash,
+            "fitted_sha256": fitted["_sha256"],
+        },
+    )
 
     test = trials[trials["split"] == "test"]
     if test.empty:
         raise GateError("no test rows supplied")
     if set(trials["split"].unique()) - {"test"}:
         raise GateError("evaluate_test accepts test rows only")
-
-    ledger = {
-        "status": "started",
-        "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "protocol_sha256": protocol_hash,
-        "fitted_sha256": fitted["_sha256"],
-        "test_rows": int(len(test)),
-        "threshold": fitted["threshold"]["threshold"],
-        "threshold_scope": fitted["threshold"]["scope"],
-        "clusters": int(test["quarter"].nunique()),
-    }
-    (out_dir / "test_access.json").write_text(
-        json.dumps(ledger, indent=2) + "\n", encoding="utf-8"
-    )
 
     model = pickle.loads(
         (out_dir / _safe_model_filename(fitted["model_file"])).read_bytes()
@@ -1015,10 +1022,16 @@ def evaluate_test(
     metrics = detection_metrics(
         test["injected"].to_numpy(dtype=int), scores, fitted["threshold"]["threshold"]
     )
-    ledger["status"] = "completed"
-    ledger["completed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    (out_dir / "test_access.json").write_text(
-        json.dumps(ledger, indent=2) + "\n", encoding="utf-8"
+    ledger = test_access.complete_marker(
+        out_dir,
+        test_access.MARKER_ACCESS,
+        {
+            "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "test_rows": int(len(test)),
+            "threshold": fitted["threshold"]["threshold"],
+            "threshold_scope": fitted["threshold"]["scope"],
+            "clusters": int(test["quarter"].nunique()),
+        },
     )
     (out_dir / "metrics_test.json").write_text(
         json.dumps({"metrics": metrics, "ledger": ledger}, indent=2) + "\n", encoding="utf-8"
@@ -1068,6 +1081,11 @@ def run_campaign(
         raise ValueError("split_group must be 'fit' or 'test'")
     if split_group == "test":
         assert_test_generation_allowed(out_dir)
+        # Exclusive, cross-process claim taken before any test window is read or written.
+        test_access.claim_generation(
+            out_dir,
+            {"generator": "legacy-v1-campaign", "window_days": float(window_days)},
+        )
 
     root = root or gen.project_root()
     if windows is None:
@@ -1122,22 +1140,18 @@ def run_campaign(
         )
     frame = pd.DataFrame(rows)
     out_dir.mkdir(parents=True, exist_ok=True)
-    frame.to_csv(out_dir / f"trials_{split_group}.csv", index=False)
+    target = out_dir / f"trials_{split_group}.csv"
+    frame.to_csv(target, index=False)
+    if split_group == "test":
+        test_access.complete_marker(
+            out_dir,
+            test_access.MARKER_GENERATION,
+            {
+                "trials_rows": int(len(frame)),
+                "trials_sha256": sha256_file(target),
+            },
+        )
     return frame
-
-
-def time_domain_features(times: np.ndarray, flux: np.ndarray) -> dict:
-    baseline = float(np.median(flux))
-    resid = flux - baseline
-    gaps = np.diff(times) > 0.05
-    return {
-        "min_depth_ppm": float((baseline - float(np.min(flux))) * 1e6),
-        "std_ppm": float(np.std(flux) * 1e6),
-        "mad_ppm": float(np.median(np.abs(resid)) * 1e6),
-        "gap_fraction": float(np.sum(gaps) / max(1, len(times) - 1)),
-        "mean_flux": float(np.mean(flux)),
-        "n_points": int(len(times)),
-    }
 
 
 MODES = {
@@ -1200,6 +1214,12 @@ def main() -> None:  # pragma: no cover - CLI glue
         print(json.dumps(describe_mode(args.describe_mode, manifest_dir), indent=2))
         return
     out_dir = Path(args.out) if args.out else manifest_dir
+    try:
+        safeguards.assert_safe_output(
+            out_dir, root=gen.project_root(), purpose="phase11 stage0 CLI"
+        )
+    except safeguards.SafeguardError as exc:
+        raise SystemExit(f"refused: {exc}") from exc
     hashes = write_stage0(out_dir, manifest_dir)
     print(json.dumps({"written": hashes}, indent=2))
 

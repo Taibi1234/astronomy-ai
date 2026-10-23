@@ -33,6 +33,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from . import safeguards
+
 PERIOD_DAYS = 0.837491225  # Kepler-10 b, published ephemeris (same value as transit_injection)
 
 # --- frozen split ------------------------------------------------------------
@@ -622,6 +624,10 @@ def feasibility_report(manifests: dict[str, dict]) -> dict:
 
 def write_manifests(out_dir: Path, root: Path | None = None) -> dict[str, dict]:
     """Write the manifests as canonical JSON (no timestamps: byte-reproducible)."""
+    safeguards.assert_not_protected_directory(
+        out_dir, root=project_root(), purpose="write_manifests"
+    )
+    safeguards.assert_no_campaign_state(out_dir, purpose="write_manifests")
     manifests = build_manifests(root)
     out_dir.mkdir(parents=True, exist_ok=True)
     for name, payload in manifests.items():
@@ -638,6 +644,10 @@ def main() -> None:  # pragma: no cover - CLI glue
     out_dir = (
         Path(args.out) if args.out else project_root() / "reports" / "phase11_generalization"
     )
+    try:
+        safeguards.assert_safe_output(out_dir, root=project_root(), purpose="generalization CLI")
+    except safeguards.SafeguardError as exc:
+        raise SystemExit(f"refused: {exc}") from exc
     manifests = write_manifests(out_dir)
     report = feasibility_report(manifests)
     print(json.dumps({"written_to": str(out_dir), "feasibility": report}, indent=2))

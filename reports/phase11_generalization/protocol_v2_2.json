@@ -1,0 +1,615 @@
+{
+  "phase": "11b",
+  "schema_version": 2,
+  "version": "phase11b-protocol-v2.2",
+  "status": "frozen before campaign; v2.2 corrects only the false thresholds.existence_argument explanation inherited from v2.1; every operative threshold rule is unchanged; no v2.2 campaign executed, no model fitted, no test row read at freeze time",
+  "protocol_content_frozen": true,
+  "protocol_fields_open": [],
+  "execution_ready": false,
+  "execution_ready_reason": "the committed runner does not yet implement v2 threshold selection, one-way marker gates, or v2 provenance; execution requires the separately authorized hardening stage, and only after that a clean-tree preflight",
+  "campaign_ready": false,
+  "campaign_ready_reason": "end-to-end readiness is false because execution_ready is false; this flag does not describe protocol completeness, which is complete: protocol_fields_open is empty and no blocking issue remains",
+  "frozen_at": "2026-10-22T22:51+08:00",
+  "baseline_commit": "230c5ae8c26b87abd719c09548a23beab8f37222",
+  "target": "Kepler-10 b",
+  "unit_of_independence": "kepler quarter",
+  "supersedes": {
+    "path": "reports/phase11_generalization/protocol.json",
+    "sha256": "ded2bd5eea3cfb3cbd5af0b67e439a767584b9bf508f02afe2a4b5d56a75319f",
+    "rule": "v1 is preserved byte-for-byte and is never edited or re-baselined; v1 remains authoritative only for the historical smoke run whose fitted.json fingerprints it; v1 must not be used for a v2 campaign"
+  },
+  "immediate_predecessor": {
+    "path": "reports/phase11_generalization/protocol_v2_1.json",
+    "version": "phase11b-protocol-v2.1",
+    "sha256": "bae1cc583e6dc85f5190c430ed55de8d2799bf994cac03d40ce7a3b423e21a80",
+    "rule": "v2.1 is preserved byte-for-byte and is never edited; it remains the record of the B1 correction, and its explanatory sentence about e(t0) is superseded by v2.2"
+  },
+  "inherits_from_v1": {
+    "rule": "the following blocks are frozen in protocol.json and are incorporated by reference, not restated, so that two sources of truth cannot drift apart",
+    "features": "v1 #/features (feature sets L0-L7, definitions, forbidden columns)",
+    "preprocessing": "v1 #/preprocessing (train-only median imputation, constant-feature drop, train-only scaling, no feature selection, no hyperparameter search)",
+    "models": "v1 #/models (LogisticRegression, RandomForestClassifier, DummyClassifier parameters and model seed 20261025)",
+    "seeds": "v1 #/seeds (split 20261022, offsets 20261023, bootstrap 20261024, model 20261025)",
+    "campaign_modes": "v1 #/campaign/modes (smoke Q00/Q01/Q04 'fit'; full 5.0 d 'fit' then 'test'; sensitivity 3.0 d 'fit' then 'test')",
+    "campaign_order": "v1 #/campaign/order",
+    "note": "any v2 field that conflicts with v1 overrides v1 and is listed in changelog_vs_v1"
+  },
+  "changelog_vs_v1": [
+    {
+      "id": "C1",
+      "area": "thresholds",
+      "change": "replaces the v1 rule 'max(3.0, p95) then raise to the next observed score' with an exact finite-sample algorithm whose candidate set includes the interpolated quantile t0",
+      "reason": "v1 code (phase11.py:530) never allows the interpolated quantile to be returned, so the threshold is not reproducible from the protocol text and can be over-lifted"
+    },
+    {
+      "id": "C2",
+      "area": "thresholds",
+      "change": "floor binding is strict (floor > quantile) and is recorded as floor_binding; v1 used '>=' (phase11.py:543)",
+      "reason": "when floor == quantile the floor does not select the value, and the provenance label must say so"
+    },
+    {
+      "id": "C3",
+      "area": "thresholds",
+      "change": "adds threshold_source with precedence tie_lift > floor > quantile",
+      "reason": "quantile selection and tie-lifting must be distinguishable in the audit trail"
+    },
+    {
+      "id": "C4",
+      "area": "detection",
+      "change": "adds detector_valid; a window with no valid grid candidate is snr = -inf and counts as not detected, never dropped",
+      "reason": "silently dropping invalid candidates biases every rate upward"
+    },
+    {
+      "id": "C5",
+      "area": "reporting",
+      "change": "primary reporting is per noise stratum; pooled is secondary and descriptive",
+      "reason": "the two noise conditions have different score distributions; pooling hides that"
+    },
+    {
+      "id": "C6",
+      "area": "fpr",
+      "change": "authoritative false-positive-rate estimate is the per-stratum rate with a Clopper-Pearson one-sided upper bound when zero false positives are observed; Wilson is secondary, trial-level and anti-conservative",
+      "reason": "v1 stated 'Wilson and cluster' without defining which interval is authoritative or what it assumes"
+    },
+    {
+      "id": "C7",
+      "area": "bootstrap",
+      "change": "percentile bootstrap is primary; BCa is secondary and diagnostic",
+      "reason": "BCa acceleration estimated from five clusters is too noisy to be the primary interval"
+    },
+    {
+      "id": "C8",
+      "area": "comparison",
+      "change": "adds the pre-registered L7-versus-physics detector contrast, the 0.02 absolute FPR-mismatch gate, the intersection-union rule across strata, the heterogeneity guard, and the degenerate-interval rule",
+      "reason": "v1 pre-registered no detector-versus-ML comparison criterion at all"
+    },
+    {
+      "id": "C9",
+      "area": "test_access",
+      "change": "replaces the v1 existence-check ledger with one-way O_EXCL markers, atomic trials rename, and fail-closed gates on every interruption and concurrency case",
+      "reason": "the v1 ledger was check-then-write and therefore racy, and a crashed run left no evidence of a consumed read"
+    },
+    {
+      "id": "C10",
+      "area": "provenance",
+      "change": "adds commit id, clean-tree gate, dirty flag, source-manifest hash, offsets and manifest hashes, and interpreter package versions to the fitted artifact",
+      "reason": "v1 fitted.json recorded no source revision or environment, so a run could not be tied to a code state"
+    },
+    {
+      "id": "C11",
+      "area": "thresholds",
+      "change": "min_calibration_n_per_stratum lowered from 50 to 30 in v2.1 (L7 validation-null pool is 42 per stratum); documents the quantisation of the operating point, the no-fallback rule, and the threshold saturation rule",
+      "reason": "closes blocking issue B1 without pooling strata or relaxing the target false-positive rate"
+    },
+    {
+      "id": "C12",
+      "area": "thresholds",
+      "change": "replaces the false claim that e(t0) <= (n-1)/n * target_fpr < target_fpr, and adds tie_lift_note stating that lifting is the expected path at the frozen calibration sizes",
+      "reason": "the sentence was wrong for small n (n = 30, scores 0..29: q = 27.55, e(t0) = 2/30 = 0.0667 > 0.05) and produced by tie_lift, not by an exception",
+      "operative_rules_changed": "none"
+    }
+  ],
+  "approval_decisions": {
+    "rule": "each decision is recorded verbatim as approved, with its consequence; a decision marked 'human' is not implementable from code and must not be inferred by the software",
+    "D1_minimum_meaningful_difference": {
+      "value": null,
+      "status": "explicitly unset by owner decision",
+      "consequence": "conclusions are descriptive-only; practical-superiority claims are prohibited; statistical superiority may be described only if the prespecified comparison supports it, with the limited power of the design and the five-cluster structure disclosed"
+    },
+    "D2_timing_tolerance_days": {
+      "value": 0.0377,
+      "status": "approved; unchanged from v1",
+      "exact_half_duration_days": 0.0377365,
+      "note": "rounded value retained for continuity with the frozen v1 artifacts; difference 3.7e-5 d (about 3.2 s), roughly 1.5 percent of one grid step; changing it would reclassify boundary trials"
+    },
+    "D3_heterogeneity_guard": {
+      "value": "adopt",
+      "rule": "if at least 2 of the 5 test quarters have a recall-difference sign opposite to the pooled difference, the comparison is inconclusive",
+      "zero_difference_case": "if the pooled difference is exactly 0.0 the sign is undefined and the result is inconclusive by rule"
+    },
+    "D4_primary_model": {
+      "value": "L7_detector_plus_clean_flux",
+      "status": "provisional primary",
+      "note": "L6-style ablation of min_depth_ppm stays diagnostic and is excluded from every realistic-detection claim"
+    },
+    "D5_fpr_matched_sensitivity": {
+      "value": "include as secondary only",
+      "rule": "it may never override, replace, or rescue the primary result, and may not be selected after seeing test outcomes"
+    },
+    "D6_bind_hashes": {
+      "value": true,
+      "rule": "offsets.json and every required manifest and sidecar hash are bound into this protocol; see frozen_inputs"
+    },
+    "D7_bootstrap": {
+      "value": "percentile primary; BCa secondary and diagnostic",
+      "resamples": 10000,
+      "seed": 20261024,
+      "cluster": "quarter",
+      "pairing": "common resample indices are shared by both methods so the difference is paired at cluster level",
+      "limitation": "only 5 clusters; resample count is not evidence of independent units"
+    },
+    "D8_min_calibration_n_per_stratum": {
+      "value": 30,
+      "status": "approved by owner authorization for B1 only",
+      "unchanged_by_this_decision": [
+        "target_fpr = 0.05",
+        "strict '>' comparison",
+        "validation-only L7 calibration",
+        "per-stratum calibration without pooling",
+        "fail-closed gates"
+      ],
+      "consequence": "L7 becomes calibratable at 42 nulls per stratum; the operating point is quantised and conservative, and this must be stated wherever the operating point is reported"
+    }
+  },
+  "data_roles": {
+    "detector_calibration": "all null_window trials with split in {train, val}, per noise_condition",
+    "detector_calibration_reason": "the physics detector has no fitted parameters; its threshold is the only estimated quantity, so maximising calibration nulls cannot leak a label",
+    "l7_calibration": "all null_window trials with split == val, per noise_condition",
+    "l7_calibration_reason": "L7 is fitted on train windows, so train null scores are in-sample and would inflate the threshold; only validation nulls are admissible",
+    "model_fitting": "train windows only",
+    "model_and_threshold_selection": "validation only",
+    "test_usage": "one generation of sealed test trials and one final evaluation; test rows never enter fitting, feature selection, imputation, scaling, threshold calibration, or hyperparameter choice",
+    "leakage_invariant": "no test row may be read before fitted.json is frozen and hashed, and no test outcome may influence any value recorded in this protocol",
+    "paired_controls": "excluded from calibration, from every false-positive-rate denominator, and from the confirmatory comparison"
+  },
+  "detection": {
+    "detection_rule": "detected := detector_valid AND snr > threshold[noise_condition]",
+    "comparison_operator": "strict >",
+    "timing_qualified_recovery": "recovered := detected AND abs(timing_error_days) <= 0.0377",
+    "timing_error_definition": "timing_error_days = delta_est_days - delta_true_days, signed; the absolute value is applied only inside the recovery test",
+    "boundary_rule": "inclusive at exactly 0.0377",
+    "separation": "detection recall and timing-qualified recovery are separate metrics; neither substitutes for the other; detection recall is the confirmatory metric",
+    "invalid_candidate_rule": "detector_valid = false means not detected and not recovered; it stays in every denominator",
+    "grid_determinism": "the detector grid, template, argmax tie-break (strict >, earliest candidate on exact ties) and sign conventions are those of research/core.py and are unchanged by this protocol"
+  },
+  "thresholds": {
+    "target_fpr": 0.05,
+    "target_fpr_meaning": "the nominal rate on the calibration pool, not the achieved rate on test",
+    "min_calibration_n_per_stratum": 30,
+    "min_calibration_n_status": "lowered from 50 to 30 by owner authorization on 2026-10-22, for B1 only; the L7 validation-null pool is 42 per stratum and therefore clears the minimum with 12 trials of headroom",
+    "floor_snr_detector": 3.0,
+    "floor_snr_l7": null,
+    "percentile_method": "linear",
+    "quantile_definition": "q = linear-interpolated (1 - target_fpr) quantile of the finite calibration scores of that stratum",
+    "floor_binding_rule": "floor_binding := (floor is not null) AND (floor > q); strict comparison",
+    "working_value_rule": "t0 := max(q, floor) when floor is not null, else q",
+    "candidate_set_rule": "C := sorted unique of ({t0} UNION {x in scores : x >= t0})",
+    "exceedance_rule": "e(t) := count(scores > t) / n",
+    "selection_rule": "threshold := min { t in C : e(t) <= target_fpr }",
+    "existence_argument": "e(max score) = 0 <= target_fpr, so C always contains a qualifying value and the threshold is always defined for any finite calibration sample. The interpolated quantile itself is NOT guaranteed to satisfy the bound. With linear interpolation the count of scores strictly above q is at most ceil((n - 1) * target_fpr), so e(t0) <= ceil((n - 1) * target_fpr) / n, and that bound exceeds target_fpr for many sample sizes: n = 30 gives 2/30 = 0.0667, n = 42 gives 3/42 = 0.0714, n = 76 gives 4/76 = 0.0526. Ties can only reduce the count. When e(t0) exceeds the target the rule selects the next observed score above t0 and records threshold_source = tie_lift, so lifting is expected at these sample sizes rather than exceptional. The same lifting applies when the floor binds: floor > q guarantees only e(floor) <= e(q), not e(floor) <= target_fpr. The operative rules are unchanged by this explanation: the candidate set, the minimum-candidate selection, the strict '>' comparison and the source precedence are identical to protocol v2.1.",
+    "exceedance_guarantee": "the returned threshold always satisfies t >= max(q, floor) and e(t) <= 0.05 by construction; the v1 failure branch 'tie rule could not bring calibration exceedance under target' is unreachable in v2 and survives only as a defensive assertion",
+    "interpolation_note": "q and t0 are float64 values with no rounding; the threshold is either exactly t0 or an observed calibration score",
+    "tie_note": "candidates are unique observed scores, so equal scores cannot yield different thresholds; ties inside the distribution are absorbed by the strict > counting rule, which is why a threshold may sit exactly on a tied value and still satisfy the exceedance bound",
+    "threshold_source_precedence": [
+      "1. if threshold > t0 -> threshold_source = 'tie_lift'",
+      "2. else if floor is not null AND floor > q -> threshold_source = 'floor'",
+      "3. else -> threshold_source = 'quantile'"
+    ],
+    "threshold_source_notes": "evaluated in order and mutually exclusive; when floor == q the floor does not bind, so the label is 'quantile'; 'tie_lift' takes precedence because a lifted threshold is no longer equal to the floor and selection, not the floor, produced the final value",
+    "recorded_fields": [
+      "threshold",
+      "threshold_source",
+      "quantile_q",
+      "t0",
+      "floor",
+      "floor_binding",
+      "n",
+      "calibration_exceedance",
+      "target_fpr",
+      "scope"
+    ],
+    "test_controls_excluded": "no test null or test injection score may enter any calibration computation",
+    "no_fallback_rule": "a stratum with fewer than the minimum calibration nulls is not calibrated; it is not pooled with the other stratum, the target false-positive rate is not relaxed, alpha is not raised, and the stratum is not dropped to rescue the comparison; the stratum and the overall comparison are reported as inconclusive",
+    "calibration_resolution": {
+      "l7_n_per_stratum": 42,
+      "detector_n_per_stratum": 134,
+      "granularity_l7": "1/42 = 0.0238; the largest calibration exceedance the rule may leave at n = 42 is 2/42 = 0.0476, so the realised exceedance can only be 0, 0.0238 or 0.0476",
+      "granularity_at_minimum": "at n = 30 the allowed exceedance is at most 1/30 = 0.0333, so a stratum calibrated at the minimum cannot reach the 5 percent target and is systematically conservative",
+      "effective_resolution_caveat": "resolution is set by the number of distinct calibration scores, not by n; heavily tied scores reduce it further, and the realised operating point may sit materially below the 5 percent target as a result",
+      "consequence": "the calibrated operating point is quantised and conservative; the achieved test false-positive rate is expected to sit at or below target, and any shortfall is not evidence of a better detector; neither point estimates nor intervals may be reported without stating these quantisation limits",
+      "no_compensation": "the target rate is not raised and no interpolation or smoothing of the score distribution is introduced to recover resolution"
+    },
+    "tie_and_saturation_rules": {
+      "exceedance_target_always_satisfiable": "true; because e(max calibration score) = 0 <= target, ties can never make the calibration constraint unsatisfiable, so the threshold is always defined",
+      "what_ties_can_do": [
+        "collapse the threshold onto the maximum observed calibration score",
+        "reduce effective resolution below 1/n when many scores are identical",
+        "produce a threshold equal to the upper bound of the score range"
+      ],
+      "saturation_rule": "if the selected threshold is greater than or equal to the supremum of the achievable score range for that model (1.0 for probability outputs), the strict '>' detection rule can never fire; the operating point is then marked threshold_degenerate = true, the stratum is reported as having no usable operating point, and the comparison is inconclusive",
+      "saturation_is_not_a_target_failure": "a degenerate threshold still satisfies the calibration exceedance bound; it fails operability, not exceedance, and the two must be reported separately",
+      "lower_saturation_note": "a threshold equal to the minimum achievable score is not degenerate: strict '>' then detects every trial, which is reported as an operating point with false-positive rate 1.0 and is not silently discarded"
+    },
+    "tie_lift_note": "At the frozen calibration sizes lifting is the normal path, not an edge case: the L7 pool of 42 validation nulls per stratum gives e(q) = 3/42 = 0.0714, so the rule selects the next observed score and records e = 2/42 = 0.0476; the detector pool of 134 gives e(q) = 7/134 = 0.0522 and lifts to 6/134 = 0.0448. The realised exceedance is therefore quantised and at or below the target, never above it."
+  },
+  "reporting": {
+    "primary_family": "per noise_condition",
+    "strata": [
+      "observed",
+      "amplified_x2"
+    ],
+    "primary_denominators": {
+      "fpr_nulls": 76,
+      "detection_injections": 360,
+      "recovery_injections": 360,
+      "injections_per_depth": 72
+    },
+    "pooled_secondary_denominators": {
+      "fpr_nulls": 152,
+      "detection_injections": 720,
+      "recovery_injections": 720,
+      "injections_per_depth": 144,
+      "status": "secondary and descriptive; pooled results may not upgrade a primary inconclusive outcome"
+    },
+    "calibration_pool_denominators": {
+      "detector_nulls_per_stratum": 134,
+      "l7_nulls_per_stratum": 42
+    },
+    "paired_controls_excluded": 408,
+    "unit_of_observation": "one window trial",
+    "unit_of_dependence": "the Kepler quarter; any interval that claims coverage must resample quarters",
+    "denominator_derivation": {
+      "sources": [
+        "windows_primary.json (window slots and their split and role)",
+        "experiment_config.json (depths, noise conditions, offset draws)"
+      ],
+      "null_trials_per_null_slot": "offset_draws(2) x noise_conditions(2) = 4",
+      "injected_trials_per_injection_slot": "depths(5) x offset_draws(2) x noise_conditions(2) = 20",
+      "control_trials_per_injection_slot": "1 control depth x offset_draws(2) x noise_conditions(2) = 4",
+      "slot_counts": {
+        "train": {
+          "injection": 45,
+          "null": 46
+        },
+        "val": {
+          "injection": 21,
+          "null": 21
+        },
+        "test": {
+          "injection": 36,
+          "null": 38
+        }
+      },
+      "consistency_requirement": "the runner recomputes these denominators from the frozen inputs before any evaluation and raises GateError on any mismatch with the literals above; the literals are pre-registration, not data",
+      "verified_at_freeze": "totals 2040 injected, 408 controls, 420 nulls reproduce experiment_config.json projected_cost exactly"
+    },
+    "paired_control_identification": "paired controls carry role='injection' with requested_depth_ppm = 0.0 and injected = false; null_window trials carry role='null_window' with requested_depth_ppm = 0.0; exclusion from the false-positive-rate denominator is therefore by role, never by depth, because a depth filter would conflate the two",
+    "never_reported": "no rate without its numerator, denominator, stratum, and interval method"
+  },
+  "fpr": {
+    "point_estimate": "k / n with n = 76 per stratum (152 pooled, secondary)",
+    "primary_interval": {
+      "zero_false_positives": "one-sided 95 percent Clopper-Pearson upper bound 1 - 0.05^(1/n)",
+      "zero_fp_values": {
+        "n_76": 0.0387,
+        "n_152": 0.0195
+      },
+      "positive_count": "two-sided 95 percent Clopper-Pearson interval, labelled trial-level"
+    },
+    "secondary_interval": {
+      "method": "two-sided Wilson 95 percent upper bound",
+      "values": {
+        "n_76": 0.0481,
+        "n_152": 0.0246
+      },
+      "label": "trial-level and anti-conservative under within-quarter dependence; never described as cluster-adjusted"
+    },
+    "cluster_reporting": "a quarter-level bootstrap of the false-positive rate is reported as a diagnostic only; with 5 quarters it is weakly identified and may not be used to declare the target met or unmet",
+    "target_vs_achieved": "0.05 is the calibration target; the achieved test rate is reported with its interval and is never described as achieving 5 percent",
+    "zero_count_interpretation": "0 of 76 is consistent with a true stratum rate as high as 3.87 percent at 95 percent confidence; no 1 percent target is claimed or implied anywhere"
+  },
+  "comparison": {
+    "primary_model": "L7_detector_plus_clean_flux",
+    "comparator": "physics matched-filter detector at its calibrated per-stratum threshold",
+    "confirmatory_contrast": "per-stratum detection recall difference, L7 minus physics detector",
+    "primary_metric": "detection recall at the calibrated operating point",
+    "secondary_metrics": [
+      "timing_qualified_recovery",
+      "depth_conditional_recovery",
+      "pooled recall",
+      "false_positive_rate",
+      "pr_auc_with_prevalence"
+    ],
+    "effect_estimate": "point difference plus interval",
+    "paired_resampling": {
+      "unit": "test quarter (5 clusters)",
+      "resamples": 10000,
+      "seed": 20261024,
+      "primary_method": "percentile",
+      "secondary_method": "BCa, with the quarter-level jackknife as the acceleration estimate",
+      "shared_indices": "both methods consume the same resample index vectors",
+      "statistic": "trial-weighted recall difference over all test injected trials in the resampled quarters"
+    },
+    "auxiliary_report": "per-quarter recall for both methods as a descriptive table with no confirmatory weight",
+    "fpr_operating_point_gate": {
+      "rule": "for each stratum, if abs(fpr_l7 - fpr_physics) > 0.02, that stratum's recall comparison is inconclusive for superiority",
+      "basis": "achieved test false-positive rates, point estimates",
+      "known_limitation": "with 76 null trials per stratum the gate has low resolution and mostly detects large mismatches; passing it is not proof that operating points are matched"
+    },
+    "fpr_matched_sensitivity": {
+      "role": "secondary sensitivity analysis only",
+      "rule": "may not replace, override, or rescue the primary result and may not be chosen after seeing test outcomes"
+    },
+    "heterogeneity_guard": {
+      "rule": "if at least 2 of 5 test quarters show a recall-difference sign opposite to the pooled difference, the comparison is inconclusive",
+      "zero_case": "a pooled difference of exactly 0.0 makes the outcome inconclusive"
+    },
+    "unreliable_interval_rule": {
+      "triggers": [
+        "fewer than 2 distinct bootstrap values",
+        "any non-finite replicate",
+        "fewer than 3 of 5 quarters contributing a non-zero paired difference"
+      ],
+      "classification": "inconclusive (unreliable interval)",
+      "prohibition": "an unreliable interval is never interpreted as equivalence, as no effect, or as evidence of superiority"
+    },
+    "decision_rule": "L7 is superior only if every confirmatory stratum has a reliable interval whose lower bound exceeds 0, the per-stratum false-positive-rate mismatch is at most 0.02, the heterogeneity guard does not fire, and the minimum-data rules are met; otherwise the outcome is inconclusive or not superior, and inconclusive is mandatory whenever reliability, the mismatch gate, the guard, or the minimum-data rules fail",
+    "practical_superiority": "prohibited: the minimum meaningful difference is unset, so no practical-superiority claim may be made",
+    "multiplicity": {
+      "family": "the per-stratum detection-recall contrast across the two noise strata",
+      "rule": "intersection-union: superiority requires every stratum in the family to satisfy the decision rule independently; this controls family-wise error without further correction",
+      "consequence": "an effect confined to one stratum cannot be declared; that is the conservative direction and is accepted"
+    },
+    "descriptive_baselines": [
+      "L0_no_skill_all_positive",
+      "L1_dummy_stratified",
+      "L2_snr_only",
+      "L3_detector_outputs",
+      "L4_flux_full",
+      "L5_flux_without_depth_proxy",
+      "L6_flux_clean"
+    ],
+    "diagnostic_only": "the min_depth_ppm ablation (L4 versus L5, and the L6 comparisons) uses injected ground truth and is excluded from every realistic-detection claim; injected ground truth is never a detector input in the primary model",
+    "prohibited_claims": "no real-planet discovery claim; no generalisation from synthetic injection results to real Kepler or TESS targets; no claim that higher recall implies discovery capability; no claim of matched operating points from the 0.02 gate"
+  },
+  "bootstrap": {
+    "method_primary": "percentile",
+    "method_secondary": "BCa (diagnostic)",
+    "resamples": 10000,
+    "seed": 20261024,
+    "cluster": "quarter",
+    "percentile_method": "linear",
+    "pairing": "common resample indices across methods",
+    "report": "interval, method, cluster count (5), and resample count",
+    "limitation": "five clusters; the resample count is not a count of independent units; intervals are reported as weakly identified and any unreliable result is inconclusive"
+  },
+  "insufficient_data": {
+    "minimum_test_clusters": 3,
+    "minimum_calibration_nulls_per_stratum": 30,
+    "minimum_test_nulls_per_stratum": 30,
+    "minimum_test_injections_per_depth_per_stratum": 20,
+    "action_on_failure": "the affected stratum is reported as not evaluated with the reason and the observed count; the overall comparison is inconclusive; no substitute denominator, no rescue by pooling, no reweighting",
+    "current_status": "all minima are met: 5 test clusters, 76 test nulls and 72 injections per depth per stratum on the test side, 134 calibration nulls per stratum for the detector and 42 per stratum for L7",
+    "minimum_calibration_n_status": "aligned with thresholds.min_calibration_n_per_stratum = 30 after the B1 correction"
+  },
+  "test_access": {
+    "markers": [
+      "test_generation.json",
+      "test_access.json"
+    ],
+    "state_machine": "each marker permits exactly one transition: absent -> started -> completed; there is no other transition",
+    "creation": "O_CREAT|O_EXCL; the started record is written before any test row is generated or read",
+    "one_way": "markers are never reset, deleted, renamed, truncated, or reused by any software path in this repository",
+    "interrupted_run": "a marker left in started is terminal evidence of an interrupted run and every later attempt must refuse",
+    "no_automatic_remediation": "no function removes or rewrites a marker; remediation requires an explicit human-authorized manual action outside the software and must be documented separately",
+    "trials_commit": "test trials are written to a temporary file in the destination directory and atomically renamed; the sha256 of the committed file is recorded in the generation marker",
+    "evaluation_gate": "evaluate_test refuses unless the generation marker is completed, the trials sha256 matches the recorded value, the access marker is absent, the protocol_v2 hash matches, the fitted.json hash matches its sidecar, and the source tree is clean at the recorded commit",
+    "early_access_guard": "any test read, generation, or evaluation is refused while fitted.json or its sidecar is missing, or while any hash check fails",
+    "concurrency": "O_EXCL makes concurrent starts mutually exclusive; the loser fails closed; no lock or marker is treated as authoritative after a crash",
+    "repeated_evaluation": "a second evaluation in the same process and any evaluation after a restart are refused",
+    "failure_modes_fail_closed": [
+      "protocol, offset, manifest, fitted, or trials hash mismatch -> GateError, no fallback path",
+      "any marker present in any state -> GateError",
+      "interrupted run left started -> GateError on retry, with no retry loop",
+      "truncated or partial trials file -> sha mismatch -> GateError",
+      "concurrent second process -> GateError",
+      "process restart -> on-disk marker still blocks re-entry"
+    ]
+  },
+  "provenance": {
+    "required_before_campaign": [
+      "git commit id of HEAD and branch name",
+      "tracked working tree clean; untracked files permitted only if enumerated in the run report",
+      "dirty flag recorded even when the gate passes, so a dirty run can never be described as clean",
+      "sha256 of protocol_v2.json and protocol_v2.sha256",
+      "sha256 of offsets.json and its sidecar",
+      "sha256 of all five manifests and experiment_config.json",
+      "python version and exact numpy, pandas and scikit-learn versions read from the running interpreter",
+      "platform string",
+      "sha256 of the enumerated Phase 11 source manifest"
+    ],
+    "clean_tree_policy": "a campaign requires a clean tracked tree and a HEAD equal to the recorded commit; otherwise the campaign aborts before any window is read",
+    "fitted_json_must_contain": "protocol hash, offsets hash, manifest hashes, commit id, dirty flag, source manifest hash, model seed, hyperparameters, library versions, training row count, per-stratum threshold table with provenance, and the trials fingerprint",
+    "hash_meaning": "a hash establishes artifact identity only; it does not establish scientific validity, which is why this protocol is approved on content as well as hash"
+  },
+  "frozen_inputs": {
+    "rule": "byte-for-byte immutable; the sidecars are the authority for the JSON hashes; any mismatch with these values is a GateError",
+    "directory": "reports/phase11_generalization",
+    "files": {
+      "protocol.json": "ded2bd5eea3cfb3cbd5af0b67e439a767584b9bf508f02afe2a4b5d56a75319f",
+      "protocol.sha256": "64536dfc3d23b92cfffed95eccbebb0227af79e616460385a54bf954192f385e",
+      "offsets.json": "79e8d00eeef88c4e05cb571a64cc871dd5549d1c5e7ef5fd11d32021741b5be6",
+      "offsets.sha256": "de8717df4250817a25b7d5ec217cb072b93e7a5dae2953afbf4584ff1b6124b9",
+      "split.json": "5931f5b4fc7450bb0212391f970748e7c4171c76c27697e85a5507bcfad718c1",
+      "windows_primary.json": "6d8eb4b4efad96ab5a78fab1c396e0367b0801aecd23fb3f07f3347f08d9f599",
+      "windows_sensitivity.json": "b89c6bded0c0b22a446771c9a572d0dafb91fb5ce546d4558ad492b68e7fe060",
+      "null_library.json": "767ff9408c70a9c918ae5de69b0608f16dd461b461ef516cba0ccadc892ad8b8",
+      "experiment_config.json": "43fbddc15c74c6262db9b56652ed393aca0ea4849d6b2f2df072d28079e7b4ce"
+    },
+    "historical_smoke": {
+      "path": "reports/phase11_generalization/smoke",
+      "status": "pre-v2; fingerprints protocol v1; not evidence for v2; must never be modified or regenerated",
+      "files": {
+        "fitted.json": "1309379891482877b577366ac8f4a7404ed0def0a070fce3dec8aee6fd666450",
+        "fitted.sha256": "aee4e25f8395035791a84cb33f441763d815b7f6d53380c9c3fa87e348c0d19f",
+        "model.pkl": "3ec19ddd691f4b06c6add9c231cb63f49d1f49e8ab28d9bfb89d2bcab76db51d",
+        "trials_fit.csv": "108d9421316b4d7738bbb6fa82c7833428cf2df3235998f18fc28a6c8be3822d"
+      }
+    },
+    "invalid_scope_quarantine": {
+      "path": "reports/phase11_generalization/smoke_invalid_scope_20261022",
+      "status": "INVALID; retained for process audit only; must never be used for any scientific inference and never modified",
+      "files": {
+        "fitted.json": "b4c35fa877a7ee61981a7baaa9decb64035b38193ca0df385a147734675a2a38",
+        "fitted.sha256": "0b19982937f4b1ac42bfe177105191c1572b483b167248f09a72c0b31d52ba48",
+        "model.pkl": "577cd73234221f23e9369a832a66f609c17f3364f2c78aa53219ff7894106f1a",
+        "trials_fit.csv": "b1691d293451921bc94f20e7c48376150ae5fb123ff63653a1886a5433620558"
+      }
+    }
+  },
+  "campaign_requirements": {
+    "protocol_selection": "run_campaign requires schema_version 2 and a hash match against protocol_v2.sha256; protocol v1 is accepted only for reproducing the historical smoke run",
+    "preconditions": [
+      "clean tracked tree at the recorded commit",
+      "protocol, offsets and all manifest hashes verified",
+      "no test_generation.json and no test_access.json present",
+      "fitted.json, model.pkl and fitted.sha256 frozen and hashed before any test read"
+    ],
+    "excluded_scope": "the 3-day sensitivity campaign enters no confirmatory claim; the TESS sector is excluded from the split and is descriptive only"
+  },
+  "environment": {
+    "observed_venv_interpreter": {
+      "path": ".venv/Scripts/python.exe",
+      "python": "3.11.17",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "scikit-learn": "1.9.1",
+      "observed_at": "2026-10-22"
+    },
+    "v1_protocol_declared": {
+      "python": "3.14.3",
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "scikit-learn": "1.9.1"
+    },
+    "divergence": "v1 declares a Python 3.14 / numpy 2.5 / pandas 3.0 stack that is not the virtual environment observed in this repository; v1 is not edited; the actual stack that produced the historical smoke artifacts is unresolved; v2 records the observed interpreter and requires the run itself to capture versions at freeze time rather than trusting this block"
+  },
+  "blocking_issues": [],
+  "resolved_issues": [
+    {
+      "id": "B1",
+      "severity": "blocking (closed)",
+      "title": "approved minimum calibration sample was unreachable for L7",
+      "original_conflict": "min_calibration_n_per_stratum was 50; the L7 validation-null pool is 84 total = 42 per stratum, so L7 calibration failed closed",
+      "resolution": "minimum lowered to 30 by explicit owner authorization, for this issue only; the strict threshold algorithm, the 0.05 target, validation-only L7 calibration, and every fail-closed rule are unchanged",
+      "verified_after_resolution": "L7 42 >= 30 (headroom 12); detector 134 >= 30 (headroom 104)",
+      "residual_limitation": "at 42 calibration nulls the operating point is quantised to steps of 0.0238 and the realised exceedance is 0, 0.0238 or 0.0476; this limitation is recorded in thresholds.calibration_resolution and is not removed by lowering the minimum",
+      "closed_at": "2026-10-22T22:34+08:00"
+    }
+  ],
+  "unresolved": [
+    {
+      "id": "U1",
+      "item": "minimum meaningful difference",
+      "status": "deliberately unset (decision D1); not an oversight and not inferable",
+      "effect": "descriptive-only conclusions; practical-superiority claims prohibited"
+    },
+    {
+      "id": "U3",
+      "item": "actual interpreter stack behind the historical smoke artifacts",
+      "status": "unresolved; v1 declares a stack that differs from the observed virtual environment"
+    },
+    {
+      "id": "U4",
+      "item": "schema and version validation for the five manifests",
+      "status": "open engineering item; manifests carry phase '11a' and no schema_version field, so v2 validation must key on phase plus structure; to be implemented in the hardening stage, not here"
+    },
+    {
+      "id": "U5",
+      "item": "reuse of the historical v1 fitted artifact for any v2 purpose",
+      "status": "prohibited; a v2 campaign must fit its own model and record its own provenance"
+    },
+    {
+      "id": "U2",
+      "item": "L7 calibration minimum",
+      "status": "resolved by v2.1: minimum is 30 and the L7 pool is 42 per stratum; the resolution limitation of 42 nulls remains a documented constraint, not an open field"
+    }
+  ],
+  "pre_registration_state": {
+    "rule": "every field above is frozen before test-trial generation; no rule may be added or altered after test outcomes exist",
+    "frozen_fields": [
+      "detection",
+      "thresholds",
+      "data_roles",
+      "reporting",
+      "fpr",
+      "comparison",
+      "bootstrap",
+      "insufficient_data",
+      "test_access",
+      "provenance",
+      "frozen_inputs",
+      "campaign_requirements",
+      "thresholds.calibration_resolution",
+      "thresholds.tie_and_saturation_rules",
+      "thresholds.no_fallback_rule"
+    ],
+    "open_fields": [],
+    "campaign_ready": false,
+    "open_fields_note": "no protocol field is open; the minimum meaningful difference remains deliberately unset by owner decision D1, which restricts interpretation to descriptive-only and is not an open field",
+    "campaign_ready_note": "false refers to end-to-end execution readiness (execution_ready), not to protocol completeness"
+  },
+  "input_verification": {
+    "verified_at": "2026-10-22T22:51+08:00",
+    "result": "the nine frozen v1 inputs and both historical smoke directories were re-hashed immediately before and after this file was written and were byte-identical; the values are recorded in frozen_inputs",
+    "files_checked": 9,
+    "smoke_files_checked": 8,
+    "mismatches": 0
+  },
+  "correction_record": {
+    "authorized_scope": "correction of thresholds.existence_argument only",
+    "operative_rule_fields_verified_unchanged": [
+      "thresholds.algorithm",
+      "thresholds.candidate_set_rule",
+      "thresholds.selection_rule",
+      "thresholds.exceedance_rule",
+      "thresholds.threshold_source_precedence",
+      "thresholds.floor_binding_rule",
+      "thresholds.working_value_rule",
+      "thresholds.min_calibration_n_per_stratum",
+      "thresholds.target_fpr",
+      "thresholds.floor_snr_detector",
+      "thresholds.calibration_resolution",
+      "thresholds.tie_and_saturation_rules",
+      "thresholds.no_fallback_rule",
+      "detection",
+      "comparison",
+      "fpr"
+    ],
+    "changed_paths_vs_v2_1": [
+      "changelog_vs_v1[len]",
+      "frozen_at",
+      "immediate_predecessor.path",
+      "immediate_predecessor.rule",
+      "immediate_predecessor.sha256",
+      "immediate_predecessor.version",
+      "input_verification.verified_at",
+      "status",
+      "thresholds.existence_argument",
+      "thresholds.tie_lift_note",
+      "version"
+    ],
+    "mechanical_check": "a recursive field-by-field comparison of v2.1 and v2.2 produced exactly the changed_paths listed here; any other difference aborts generation of this artifact",
+    "predecessor_preserved": true
+  }
+}
