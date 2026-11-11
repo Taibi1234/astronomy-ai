@@ -483,7 +483,7 @@ def test_symlinked_data_root_escape_is_refused(quarters, tmp_path):
     (external / "kepler_q00_quality_masked.csv").write_text(
         "time,normalized_flux\n0.00,1.0\n", encoding="utf-8"
     )
-    data = tmp_path / "Data"
+    data = tmp_path / "data"
     data.mkdir()
     _symlink(data / "processed", external, directory=True)
 

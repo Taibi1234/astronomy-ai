@@ -1,4 +1,4 @@
-﻿.venv/
+.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -19,9 +19,13 @@ data/processed/*
 .env
 .env.*
 
+# Local agent/tooling state must never enter a commit
+HOME/
+.claude/
 
-# OS / editor noise
+# OS / editor noise and local backups
 .DS_Store
 Thumbs.db
+*.bak
 
 # Keep generated figures only when intentionally reviewed and committed

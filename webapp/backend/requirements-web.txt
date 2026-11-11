@@ -1,20 +1,19 @@
-# Web application dependencies for the read-only demo API.
+# Web application and research-test dependencies.
 #
-# Verified interpreter: CPython 3.14.3 (Windows). That is the only interpreter
-# this project has actually been run on (webapp/backend/.venv).
+# Verified interpreters:
+# - CPython 3.14.3 on Windows (original application environment)
+# - CPython 3.12.12 on Linux (756 passed, 28 skipped)
 #
-# Python version: these pins declare a "Requires-Python" floor of >=3.12 (numpy
-# 2.5.4 is the binding constraint; pandas, scikit-learn and matplotlib declare
-# >=3.11). Python 3.12 compatibility and wheel availability were NOT tested and
-# are NOT guaranteed. Use 3.14.3 to reproduce the verified environment.
+# numpy 2.5.4 and the scipy version selected by scikit-learn require Python
+# >=3.12. Use Python 3.12 or newer with these pins.
 #
-# Every pin below was checked against the installed distribution metadata in
-# webapp/backend/.venv.
+# batman-package 2.5.3 is required for NumPy 2.x compatibility. Its openmp
+# helper imports distutils, which is no longer in the Python 3.12 stdlib;
+# setuptools supplies the compatibility shim and is therefore a runtime
+# dependency, not merely packaging tooling.
 #
-# matplotlib and scikit-learn are not used by the read-only endpoints, but
-# app.py imports research.jobs, which imports research.experiment (scikit-learn)
-# and research.reports (matplotlib) at module load. Removing them requires making
-# that import lazy, which is out of scope for this release.
+# matplotlib and scikit-learn are imported at module load through research.jobs
+# even by the read-only endpoints, so they remain application dependencies.
 fastapi==0.159.1
 uvicorn==0.54.0
 pydantic==2.14.1
@@ -22,7 +21,8 @@ numpy==2.5.4
 pandas==3.0.6
 scikit-learn==1.9.1
 matplotlib==3.11.2
-batman-package==2.5.2
+batman-package==2.5.3
+setuptools==84.2.1
 
 # Test-only: the API tests use fastapi.testclient.
 httpx==0.28.1

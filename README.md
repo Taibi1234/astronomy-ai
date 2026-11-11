@@ -1,5 +1,8 @@
 # astronomy-ai — Kepler-10 b transit re-detection and validation pipeline
 
+[![CI](https://github.com/Taibi1234/astronomy-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Taibi1234/astronomy-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 A reproducible analysis of the **known** transiting planet **Kepler-10 b**, built to answer a
 methodological question rather than a discovery question:
 
@@ -203,38 +206,37 @@ astronomy-ai/
 │   ├── phase4_block_bootstrap.py       # Phase 4: segment-aware block bootstrap
 │   ├── phase4_injection_recovery.py    # Phase 4: injection/recovery + control
 │   ├── phase4_model_comparison.py      # Phase 4: naive ΔBIC with correlation warning
-│   ├── phase5_build_dataset.py         # Phase 5: dataset generator (BROKEN, see §9)
+│   ├── phase5_build_dataset.py         # Phase 5: frozen historical dataset generator
 │   ├── phase5_features.py              # Phase 5: 7-feature extraction
 │   ├── phase5_baseline.py              # Phase 5: logistic regression + RF comparison
+│   ├── phase8_*.py                     # maintained synthetic-ML pipeline
 │   └── (earlier Phase 1–2 scripts: assess_transit, fit_transit_model, phase_fold, ...)
 ├── data/
 │   ├── raw/mast_cache/          # downloaded FITS (gitignored)
-│   └── processed/               # analysis-ready CSVs (gitignored)
+│   └── processed/               # analysis CSVs; two demo light curves are bundled
 ├── reports/
-│   ├── figures/                 # Phase 1–3 figures (PNG)
+│   ├── figures/                 # scientific figures (PNG)
 │   ├── results/                 # machine-readable JSON for Phase 3–4
-│   ├── phase2_data_integrity.md
-│   ├── phase3_transit_analysis.md
-│   ├── phase4_statistical_validation.md
-│   ├── phase4_audit.md
-│   ├── phase5_results.md  /  phase5_audit.md
-│   ├── phase6_portfolio_readiness.md
-│   ├── phase7_reliability_audit.md
-│   └── phase8_ml_pipeline_audit.md
-├── tests/                        # 28 tests: phase 5 dataset, builder, phase 8 pipeline
+│   ├── injection_recovery/      # saved Phase 10 synthetic experiment and figures
+│   ├── phase11_generalization/  # frozen protocol inputs and historical smoke fixtures
+│   └── phase*_*.md              # dated analyses, audits, and decision records
+├── tests/                        # 28 core tests: dataset, builder, and Phase 8 pipeline
 ├── docs/
 │   ├── PIPELINE_STATUS.md        # which chain to run; frozen artifact hashes
 │   └── reproducibility.md
 ├── webapp/
-│   ├── backend/                 # FastAPI read-only demo API (app.py)
-│   └── frontend/                # React + Vite observatory UI
-├── pyproject.toml               # ruff config only — this is not an installable package
-└── requirements-lock.txt        # 77 pinned packages (see §9)
+│   ├── backend/                 # FastAPI API, research code, and 784 backend tests
+│   └── frontend/                # React + TypeScript + Vite observatory UI
+├── .github/workflows/ci.yml      # core, backend, frontend, and lint checks
+├── pyproject.toml               # Ruff and pytest configuration; not a package definition
+├── requirements-lock.txt        # pinned core analysis environment
+└── LICENSE                      # MIT license for the original project code
 ```
 
-`src/astronomy_ai/` is an empty package skeleton and `pyproject.toml` contains no build-system or
-project metadata. **Nothing is installed** — scripts are executed as files, and cross-script imports
-work because each script inserts its own directory into `sys.path`.
+This repository is **not an installable Python package**. Run analysis scripts as files from the
+repository root; the web API is run from `webapp/backend`. Historical reports are retained as an
+audit trail: their dated Git counts and earlier test totals describe those phases, not the current
+repository state.
 
 ---
 
@@ -293,18 +295,17 @@ regenerated in place, is in [`docs/PIPELINE_STATUS.md`](docs/PIPELINE_STATUS.md)
 .\.venv\Scripts\python.exe -m pytest tests -v
 ```
 
-**Measured output (Phase 8):** `28 passed` — 28 collected, exit code 0, ~7 s. The suite runs from any
-working directory because paths resolve from the test file, not the shell.
+**Current public-clone result:** `26 passed, 2 skipped`. The two integration tests skip when the
+full 15-quarter analysis CSV is absent. With that local analysis file present, the expected result is
+`28 passed`. The suite resolves its artifact paths from the test files rather than the shell.
 
 Coverage: dataset invariants (labels, segment separation, schema, imputation, split sizes); builder
 guards (parses, top-level indentation, features come from the presented flux, deterministic rebuild,
 regeneration matches the frozen dataset); and the Phase 8 pipeline checks (extractor cannot see labels or
 depth, one code path for both classes, parent groups never cross splits, imputation fitted on train only).
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest tests -v   # scoped
-.\.venv\Scripts\python.exe -m pytest            # bare pytest works too: pyproject.toml pins testpaths = ["tests"]
-```
+A bare `python -m pytest` is equivalent because `pyproject.toml` sets `testpaths = ["tests"]`.
+GitHub Actions runs this core suite separately from the backend and frontend checks.
 
 ### Offline reproduction (no network, uses committed artifacts only)
 
@@ -367,20 +368,21 @@ without review; the ones that have since been resolved are marked as such.
 4. **Root-level `pytest` collection is fixed.** `pyproject.toml` pins `testpaths = ["tests"]`, so a bare
    `pytest` run no longer trips over `scripts/transit_control_test.py` (which parses `sys.argv` at
    import). Both `pytest` and `pytest tests` work.
-5. **Lint is clean.** `ruff check scripts tests` reports **0 findings**. The remaining `# noqa: E402`
-   suppressions are deliberate and commented: imports must follow `sys.path` setup.
+5. **Lint is clean.** `ruff check scripts tests webapp/backend` reports **0 findings**. The remaining
+   `# noqa: E402` suppressions are deliberate and commented: imports must follow `sys.path` setup.
 6. **`reports/phase5_results.md` is now UTF-8** (converted in Phase 7 from Windows-1252; CRLF preserved,
    no replacement characters, single em dash).
-7. **Git history does not contain Phase 3–5 artifacts.** Only Phase 1–2 files are tracked. Everything
-   from `reports/results/`, `reports/phase3_*`, `reports/phase4_*`, `reports/phase5_*`, the `tests/`
-   directory, and the Phase 3–5 scripts is currently untracked. No commit was made in this phase.
+7. **Cross-platform test setup is covered.** A Phase 11 symlink-containment test originally used
+   `Data/`, which happened to work on case-insensitive Windows filesystems but failed on Linux. The
+   fixture now uses the real `data/` path; the production containment safeguard was not changed.
 8. **Superseded artifacts remain for provenance.** Q0-only fits, the orphan Phase 1 figures, and
    `injection_recovery.py` (which falls back to a fixed 15 ppm half-window when its optional
    `phase4_statistical_validation.json` input is absent) are kept intentionally; they are not part of
    the current result chain.
-9. **`pip`, `setuptools`, `wheel` are installed but deliberately not in the lock file** — they are
-    environment tooling, not analysis dependencies. `batman-package==2.5.3` **was** missing and has been
-    added to `requirements-lock.txt` in Phase 6 (see `reports/phase6_portfolio_readiness.md`).
+9. **Dependency compatibility is explicit.** `batman-package==2.5.3` is used for NumPy 2.x support.
+    `setuptools` is pinned because batman's OpenMP helper imports `distutils`, which is no longer in
+    the Python 3.12 standard library. `pip` and `wheel` remain environment tooling rather than runtime
+    dependencies.
 
 ---
 
@@ -430,7 +432,8 @@ Key figures (`reports/figures/`):
 - Seeds: `SEED = 42` (block bootstrap, dataset build, ML), `SEED = 1234` (older `injection_recovery.py`).
 - Data provenance: MAST (Kepler long-cadence `kplr011904151-*_llc.fits`, TESS SPOC S14 120 s); per-quarter
   row counts, time ranges, and observed quality bits in `reports/kepler_quarters_metadata.json`.
-- Nothing is committed or pushed. The working tree is the deliverable.
+- The repository includes dated audit reports through Phase 11. Historical status statements inside
+  those reports remain unchanged; this README and `docs/reproducibility.md` describe the current state.
 
 ---
 
@@ -544,7 +547,8 @@ input, is not part of this demo, and is not bundled.
 
 ### Setup (PowerShell)
 
-Backend — CPython 3.14.3 is the only interpreter this application has been verified on (see
+Backend — use CPython 3.12 or newer. The pinned environment was originally verified with CPython
+3.14.3 on Windows; the full suite has also passed with CPython 3.12 on Linux (see
 `webapp/backend/requirements-web.txt`):
 
 ```powershell
@@ -561,16 +565,19 @@ test suite into the runner route; the default-disabled behavior is asserted by
 `test_runner_is_disabled_by_default`):
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests -q      # 784 passed
+.\.venv\Scripts\python.exe -m pytest -q            # 756 passed, 28 skipped on the audited public clone
 ```
 
-Frontend — Node 20 or newer:
+Frontend — Node 22 or newer (required by the installed Plotly dependency chain):
 
 ```powershell
 cd C:\path\to\astronomy-ai\webapp\frontend
-npm install
+npm ci
 npm run dev
 ```
+
+For a release check, run `npm run lint` and `npm run build`. `npm ci` reproduces the lockfile;
+use `npm install` only when intentionally updating dependencies.
 
 Open <http://localhost:5173>. The UI calls `http://127.0.0.1:8000` (hard-coded in `src/App.tsx`), and
 the API allows CORS from `localhost:5173` and `localhost:5174`.
@@ -601,3 +608,36 @@ enabled runner must never be exposed on a public or shared network.
 - The injection-recovery numbers come from a saved synthetic-injection run; they do not establish
   detection performance on real observations.
 - Known unresolved issues are listed in §9.
+
+---
+
+## 13. Phase 11 research-governance status
+
+Phase 11 adds a guarded research protocol for evaluating generalization beyond the small Phase 5
+demonstration. It is **software infrastructure, not an executed scientific campaign**. The frozen
+protocol and manifests use SHA-256 integrity checks, designated fit quarters are separated from sealed
+test quarters, and test access/evaluation markers are one-shot. Historical smoke fixtures are retained
+because the safeguard tests and provenance records refer to them.
+
+The authoritative status remains:
+
+```text
+campaign_ready = false
+execution_ready = false
+scientific ceiling = descriptive_only
+```
+
+No real campaign, real trial generation, sealed-test evaluation, or authorization document is part of
+this repository finish. Issuer authenticity (H3) is still an owner decision: a document hash proves
+byte integrity, not who approved it. See
+[`reports/phase11_final_hardening_report.md`](reports/phase11_final_hardening_report.md) for the
+safeguards and unresolved trust-model decision.
+
+---
+
+## 14. License and data attribution
+
+The original project code is available under the [MIT License](LICENSE). The bundled NASA mission
+products and derived light curves retain their own provenance and acknowledgement requirements; the
+MIT license does not replace those terms. See §12 for MAST source identifiers, data-use links, and the
+required Kepler/TESS acknowledgements.

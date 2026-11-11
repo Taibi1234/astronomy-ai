@@ -210,7 +210,9 @@ h1 { max-width: 550px; margin: 17px 0 12px; font: 600 clamp(25px, 3vw, 36px)/1.1
 .rec-badge.rec-failed { border-color: #70423e; color: #ffc0b5; background: #291b20; }
 .rec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .rec-chart { min-width: 0; padding: 6px; border: 1px solid #22334a; border-radius: 9px; background: #ffffff; }
-.rec-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.rec-table-scroll { max-width: 100%; min-width: 0; overflow-x: auto; }
+.rec-table-scroll:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.rec-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 11px; }
 .rec-table th, .rec-table td { padding: 8px 9px; border-bottom: 1px solid #22334a; text-align: right; }
 .rec-table th:first-child, .rec-table td:first-child { text-align: left; color: #a9c4dc; }
 .rec-table th { color: #7591ad; font: 10px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }

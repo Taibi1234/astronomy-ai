@@ -1815,32 +1815,39 @@ function App() {
                       </div>
                     </div>
 
-                    <table className="rec-table">
-                      <thead>
-                        <tr>
-                          <th>Method</th>
-                          <th>n</th>
-                          <th>Precision</th>
-                          <th>Recall</th>
-                          <th>F1</th>
-                          <th>ROC-AUC</th>
-                          <th>No-skill F1</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(recBench).map(([name, method]) => (
-                          <tr key={name}>
-                            <td>{name}</td>
-                            <td>{method.n ?? "—"}</td>
-                            <td>{method.precision?.toFixed(3) ?? "n/a"}</td>
-                            <td>{method.recall?.toFixed(3) ?? "n/a"}</td>
-                            <td>{method.f1?.toFixed(3) ?? "n/a"}</td>
-                            <td>{method.roc_auc?.toFixed(3) ?? "n/a"}</td>
-                            <td>{method.f1_no_skill_predict_all_positive?.toFixed(3) ?? "n/a"}</td>
+                    <div
+                      className="rec-table-scroll"
+                      role="region"
+                      aria-label="Detection benchmark results"
+                      tabIndex={0}
+                    >
+                      <table className="rec-table">
+                        <thead>
+                          <tr>
+                            <th>Method</th>
+                            <th>n</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1</th>
+                            <th>ROC-AUC</th>
+                            <th>No-skill F1</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {Object.entries(recBench).map(([name, method]) => (
+                            <tr key={name}>
+                              <td>{name}</td>
+                              <td>{method.n ?? "—"}</td>
+                              <td>{method.precision?.toFixed(3) ?? "n/a"}</td>
+                              <td>{method.recall?.toFixed(3) ?? "n/a"}</td>
+                              <td>{method.f1?.toFixed(3) ?? "n/a"}</td>
+                              <td>{method.roc_auc?.toFixed(3) ?? "n/a"}</td>
+                              <td>{method.f1_no_skill_predict_all_positive?.toFixed(3) ?? "n/a"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
 
                     <div className="ti-stats">
                       <div className="ml-stat-row">
