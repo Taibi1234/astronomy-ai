@@ -1,0 +1,979 @@
+{
+  "recovery_by_depth": [
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered": 4,
+      "trials": 28,
+      "fraction": 0.14285714285714285,
+      "wilson_low": 0.056989129307017855,
+      "wilson_high": 0.31490173044877334,
+      "median_recovered_depth_ppm": 134.9725694703414,
+      "median_timing_error_days": 0.10124821046380111
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 9,
+      "trials": 28,
+      "fraction": 0.32142857142857145,
+      "wilson_low": 0.1793304754342074,
+      "wilson_high": 0.5066149544436882,
+      "median_recovered_depth_ppm": 201.627700346414,
+      "median_timing_error_days": 0.009416418519520658
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered": 14,
+      "trials": 28,
+      "fraction": 0.5,
+      "wilson_low": 0.3263284683244634,
+      "wilson_high": 0.6736715316755366,
+      "median_recovered_depth_ppm": 286.54147570224757,
+      "median_timing_error_days": 0.005718876686283892
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 18,
+      "trials": 28,
+      "fraction": 0.6428571428571429,
+      "wilson_low": 0.4582997758222723,
+      "wilson_high": 0.7929438802754113,
+      "median_recovered_depth_ppm": 360.04058338944577,
+      "median_timing_error_days": 0.003503685017455682
+    }
+  ],
+  "recovery_by_depth_test": [
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered": 0,
+      "trials": 8,
+      "fraction": 0.0,
+      "wilson_low": 0.0,
+      "wilson_high": 0.3244156195108769,
+      "median_recovered_depth_ppm": null,
+      "median_timing_error_days": 0.006819241577850882
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 2,
+      "trials": 8,
+      "fraction": 0.25,
+      "wilson_low": 0.07147768885802763,
+      "wilson_high": 0.5907301208974108,
+      "median_recovered_depth_ppm": 194.24553157963868,
+      "median_timing_error_days": 0.006819241577850882
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered": 5,
+      "trials": 8,
+      "fraction": 0.625,
+      "wilson_low": 0.30573785458380187,
+      "wilson_high": 0.863158240538479,
+      "median_recovered_depth_ppm": 286.015684346251,
+      "median_timing_error_days": 0.0038250346680398645
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 6,
+      "trials": 8,
+      "fraction": 0.75,
+      "wilson_low": 0.40926987910258916,
+      "wilson_high": 0.9285223111419724,
+      "median_recovered_depth_ppm": 365.24971998690444,
+      "median_timing_error_days": 0.0017220646361811032
+    }
+  ],
+  "recovery_by_dataset_and_noise": [
+    {
+      "dataset": "kepler",
+      "noise_condition": "amplified_x2",
+      "recovered": 15,
+      "trials": 24,
+      "fraction": 0.625,
+      "wilson_low": 0.42709619037907065,
+      "wilson_high": 0.7884086656636855
+    },
+    {
+      "dataset": "kepler",
+      "noise_condition": "observed",
+      "recovered": 21,
+      "trials": 24,
+      "fraction": 0.875,
+      "wilson_low": 0.6899571185214243,
+      "wilson_high": 0.9565574496068442
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "amplified_x2",
+      "recovered": 0,
+      "trials": 32,
+      "fraction": 0.0,
+      "wilson_low": 0.0,
+      "wilson_high": 0.1071827150573635
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "observed",
+      "recovered": 9,
+      "trials": 32,
+      "fraction": 0.28125,
+      "wilson_low": 0.15564406845647866,
+      "wilson_high": 0.4537483693811179
+    }
+  ],
+  "controls": {
+    "snr": [
+      1.5494529490851416,
+      1.5494529490851416,
+      1.5494529490851416,
+      1.5494529490851416,
+      2.4504131669868,
+      2.4504131669868,
+      2.4504131669868,
+      2.4504131669868,
+      0.9477929470033636,
+      0.9477929470060132,
+      0.9477929470033636,
+      0.9477929470060132,
+      1.238722900569387,
+      1.238722900569387,
+      1.238722900569387,
+      1.238722900569387,
+      2.9348044563461166,
+      2.9348044563461166,
+      2.9348044563461166,
+      2.9348044563461166,
+      1.5538496129654418,
+      1.5538496129654418,
+      1.5538496129654418,
+      1.5538496129654418,
+      1.812570410982727,
+      1.8125704109843763,
+      1.812570410982727,
+      1.8125704109843763
+    ],
+    "thresholds": {
+      "kepler|amplified_x2": 3.0,
+      "kepler|observed": 3.0,
+      "tess|amplified_x2": 3.0,
+      "tess|observed": 3.0
+    },
+    "n": 28,
+    "n_test": 8,
+    "false_positives": 0,
+    "scope": "S/N histogram uses all valid zero-depth controls (calibration + test); the false-positive rate uses test-split controls only"
+  },
+  "recovered_vs_injected": [
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 104.10001106633058,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 183.62663448628703,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 263.1515052408673,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 342.67446187317387,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 128.67372226381318,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 208.20034568377835,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 287.7252164383586,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 367.24817307066513,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 108.95099439048316,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 192.5710345177977,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 276.28026689839635,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 359.97682504516814,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 157.14071579665253,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 217.88961610885747,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 301.33612845240714,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 385.0957669278303,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 160.99414455019965,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 246.1445981006537,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 331.2932351209781,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 416.43988245735824,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 236.83818721321035,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 321.9886407636743,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 407.1372777839887,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 492.2839251203689,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 56.91009817206129,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 116.83049201499009,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 201.3768644055641,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 286.27344117508534,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 135.04389526602247,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 113.82002492143998,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 148.60591803335527,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 233.64081640967692,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 116.7809214528267,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 201.627700346414,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 286.015684346251,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 370.39509824008553,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 149.62199318043957,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 233.5516393502997,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 318.84121789626334,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 403.2206317901061,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 100.22488803152672,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 186.8633628128634,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 273.49035088436653,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 360.1043417337234,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 113.80180420539568,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 200.44027898674128,
+      "recovered": false,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 287.06726705824406,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 373.6812579075976,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 84.23427026511446,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 124.25574710662995,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 200.84916532575824,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 277.38753905830646,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 174.02194562169493,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 168.46854053022892,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 171.56522809103802,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 248.1036018235856,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 85.65490877700512,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 116.19366929052524,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 200.88944878771892,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 285.599044798299,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 175.70088204493678,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 171.30981755401024,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 165.88556141767862,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 232.60230850006192,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 200.92223851321452,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 194.83025285213785,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 184.6619014941976,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 180.45897026320125,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 411.5653839830211,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 401.8444770264291,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 394.6145525974023,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 389.6605057042757,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 204.5372007277279,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 197.30727629870117,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 192.1627880734441,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 187.4140942034512,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 411.010988356088,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 409.07440145521537,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 402.8773233734329,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 394.6145525974023,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 104.4379532664532,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 117.50550966061422,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 185.08879833300023,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 264.75581693478546,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 218.5532456523698,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 208.8785033641922,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 204.54711932569455,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 235.24384430643283,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 112.24417737276246,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 189.35996142914635,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 266.46682642234214,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 344.97030253333673,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 215.4681417021263,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 224.48169497144025,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 301.58855996463376,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 378.7019840074535,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 122.52341443289534,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 181.55440572361317,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 264.93134584100574,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 348.285906460393,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 256.6319357127409,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 245.0468288655509,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 283.98138264945766,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 362.83676059290553,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 135.24094803551057,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 211.411881142986,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 291.8640907165244,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 376.6896645360193,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered_depth_ppm": 253.2267474196963,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 270.2992693470433,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered_depth_ppm": 346.38869942271475,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 422.4430186820684,
+      "recovered": false,
+      "dataset": "tess"
+    }
+  ],
+  "timing_errors_days": [
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0055097486726691,
+    0.0060036850174556,
+    0.0035036850174556,
+    0.0035036850174556,
+    0.0035036850174556,
+    0.0335036850174557,
+    0.0060036850174556,
+    0.0060036850174556,
+    0.0035036850174556,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.002226421529873,
+    0.0916830874702993,
+    0.0041830874702993,
+    0.0016830874702992,
+    0.0016830874702992,
+    0.0966830874702993,
+    0.0916830874702993,
+    0.0041830874702993,
+    0.0041830874702993,
+    0.0042220646361811,
+    0.0017220646361811,
+    0.0017220646361811,
+    0.0017220646361811,
+    0.0042220646361811,
+    0.0042220646361811,
+    0.0017220646361811,
+    0.0017220646361811,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.001158658532423,
+    0.1925579079682801,
+    0.0100579079682799,
+    0.0100579079682799,
+    0.0100579079682799,
+    0.1925579079682801,
+    0.1925579079682801,
+    0.0100579079682799,
+    0.0100579079682799,
+    0.1058133334573028,
+    0.0008133334573027,
+    0.0008133334573027,
+    0.0008133334573027,
+    0.1058133334573028,
+    0.1058133334573028,
+    0.1058133334573028,
+    0.0008133334573027,
+    0.174448838376841,
+    0.169448838376841,
+    0.174448838376841,
+    0.174448838376841,
+    0.174448838376841,
+    0.174448838376841,
+    0.174448838376841,
+    0.169448838376841,
+    0.1326472356767566,
+    0.1326472356767566,
+    0.1251472356767566,
+    0.0201472356767565,
+    0.1326472356767566,
+    0.1326472356767566,
+    0.1326472356767566,
+    0.1326472356767566,
+    0.1284280046998987,
+    0.0209280046998986,
+    0.0059280046998986,
+    0.0015719953001013,
+    0.1284280046998987,
+    0.1284280046998987,
+    0.1309280046998987,
+    0.0209280046998986,
+    0.0094164185195206,
+    0.0094164185195206,
+    0.0094164185195206,
+    0.0069164185195206,
+    0.1805835814804795,
+    0.0094164185195206,
+    0.0094164185195206,
+    0.0094164185195206,
+    0.1396285817260389,
+    0.0028714182739612,
+    0.0028714182739612,
+    0.0028714182739612,
+    0.1396285817260389,
+    0.1396285817260389,
+    0.0071285817260387,
+    0.0028714182739612,
+    0.0105695242777311,
+    0.0105695242777311,
+    0.0005695242777311,
+    0.0005695242777311,
+    0.1869304757222689,
+    0.0105695242777311,
+    0.0105695242777311,
+    0.0105695242777311
+  ],
+  "timing_tolerance_days": 0.0377,
+  "benchmark": {
+    "physics_matched_filter": {
+      "f1": 0.5777777777777777,
+      "n": 40
+    },
+    "logistic_regression": {
+      "f1": 0.8888888888888888,
+      "n": 40
+    },
+    "random_forest": {
+      "f1": 0.8888888888888888,
+      "n": 40
+    },
+    "dummy": {
+      "f1": 0.8,
+      "n": 40
+    }
+  },
+  "units": {
+    "depth": "injected depth (ppm)",
+    "fraction": "recovery fraction",
+    "timing": "absolute timing error (days)",
+    "snr": "matched-filter S/N"
+  }
+}
