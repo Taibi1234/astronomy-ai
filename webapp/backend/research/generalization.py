@@ -244,9 +244,7 @@ def _is_valid_window(times: np.ndarray, window_days: float) -> bool:
     return duration >= MIN_WINDOW_FRACTION * window_days and duration / PERIOD_DAYS >= MIN_TRANSITS
 
 
-def generate_windows(
-    times: np.ndarray, quarter: str, window_days: float
-) -> list[Window]:
+def generate_windows(times: np.ndarray, quarter: str, window_days: float) -> list[Window]:
     """Consecutive, non-overlapping windows inside each contiguous piece.
 
     A window starts at the first cadence of a piece (or where the previous window
@@ -438,8 +436,11 @@ def build_manifests(root: Path | None = None) -> dict[str, dict]:
             "calibration": {
                 "splits": ["train", "val"],
                 "quarters": sorted(
-                    {w.quarter for w in windows_by_length[label] if w.split in ("train", "val")
-                     and w.role == "null"}
+                    {
+                        w.quarter
+                        for w in windows_by_length[label]
+                        if w.split in ("train", "val") and w.role == "null"
+                    }
                 ),
                 "null_windows": by_split["train"]["null_windows"] + by_split["val"]["null_windows"],
                 "null_trials": by_split["train"]["null_trials"] + by_split["val"]["null_trials"],
@@ -524,8 +525,7 @@ def build_manifests(root: Path | None = None) -> dict[str, dict]:
             "short_quarter_days": SHORT_QUARTER_DAYS,
             "short_quarters": sorted(q for q, e in quarters.items() if e["short"]),
             "note": (
-                "reported separately; the primary window length is never chosen on "
-                "test performance"
+                "reported separately; the primary window length is never chosen on test performance"
             ),
         },
         "tess_case_study": {
@@ -641,9 +641,7 @@ def main() -> None:  # pragma: no cover - CLI glue
     parser = argparse.ArgumentParser(description="Freeze the Phase 11a split and window manifests.")
     parser.add_argument("--out", default=None, help="output directory")
     args = parser.parse_args()
-    out_dir = (
-        Path(args.out) if args.out else project_root() / "reports" / "phase11_generalization"
-    )
+    out_dir = Path(args.out) if args.out else project_root() / "reports" / "phase11_generalization"
     try:
         safeguards.assert_safe_output(out_dir, root=project_root(), purpose="generalization CLI")
     except safeguards.SafeguardError as exc:

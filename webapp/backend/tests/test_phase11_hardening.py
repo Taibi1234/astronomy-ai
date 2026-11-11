@@ -27,8 +27,17 @@ def test_safe_model_filename_accepts_only_the_expected_name():
 
 @pytest.mark.parametrize(
     "name",
-    ["../model.pkl", "../../etc/passwd", "C:/tmp/model.pkl", "/abs/model.pkl",
-     "models/model.pkl", "other.pkl", "", None, 7],
+    [
+        "../model.pkl",
+        "../../etc/passwd",
+        "C:/tmp/model.pkl",
+        "/abs/model.pkl",
+        "models/model.pkl",
+        "other.pkl",
+        "",
+        None,
+        7,
+    ],
 )
 def test_safe_model_filename_rejects_traversal_and_absolutes(name):
     with pytest.raises(phase11.GateError):
@@ -94,30 +103,18 @@ def _write(tmp_path, name, payload):
 
 
 def test_load_frozen_json_checks_phase_and_schema(tmp_path):
-    good = _write(
-        tmp_path, "good.json", {"phase": "11b", "schema_version": 1, "body": {}}
-    )
-    payload, digest = phase11.load_frozen_json(
-        good, expected_phase="11b", expected_schema=1
-    )
+    good = _write(tmp_path, "good.json", {"phase": "11b", "schema_version": 1, "body": {}})
+    payload, digest = phase11.load_frozen_json(good, expected_phase="11b", expected_schema=1)
     assert payload["body"] == {}
     assert digest == phase11.sha256_file(good)
 
-    wrong_phase = _write(
-        tmp_path, "phase.json", {"phase": "10", "schema_version": 1}
-    )
+    wrong_phase = _write(tmp_path, "phase.json", {"phase": "10", "schema_version": 1})
     with pytest.raises(phase11.GateError, match="phase"):
-        phase11.load_frozen_json(
-            wrong_phase, expected_phase="11b", expected_schema=1
-        )
+        phase11.load_frozen_json(wrong_phase, expected_phase="11b", expected_schema=1)
 
-    wrong_schema = _write(
-        tmp_path, "schema.json", {"phase": "11b", "schema_version": 2}
-    )
+    wrong_schema = _write(tmp_path, "schema.json", {"phase": "11b", "schema_version": 2})
     with pytest.raises(phase11.GateError, match="schema_version"):
-        phase11.load_frozen_json(
-            wrong_schema, expected_phase="11b", expected_schema=1
-        )
+        phase11.load_frozen_json(wrong_schema, expected_phase="11b", expected_schema=1)
 
     missing = _write(tmp_path, "missing.json", {"body": {}})
     with pytest.raises(phase11.GateError, match="phase"):
@@ -128,8 +125,9 @@ def test_load_frozen_json_checks_phase_and_schema(tmp_path):
 
 
 def test_require_noise_strata_accepts_complete_sets():
-    phase11.require_noise_strata(["observed", "amplified_x2"], ["observed", "amplified_x2"],
-                                 context="unit")
+    phase11.require_noise_strata(
+        ["observed", "amplified_x2"], ["observed", "amplified_x2"], context="unit"
+    )
 
 
 def test_require_noise_strata_rejects_missing_stratum():
@@ -184,6 +182,4 @@ def test_physics_requires_a_threshold_for_each_present_stratum():
         }
     )
     with pytest.raises(phase11.GateError, match="missing noise strata"):
-        phase11.physics_operating_point(
-            frame, {"observed": {"threshold": 3.0}}, resamples=100
-        )
+        phase11.physics_operating_point(frame, {"observed": {"threshold": 3.0}}, resamples=100)

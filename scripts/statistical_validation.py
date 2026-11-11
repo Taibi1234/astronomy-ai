@@ -172,9 +172,9 @@ def bootstrap(
     depths, offsets = [], []
     for _ in range(n_replicates):
         if stratify:
-            shuffled = stratified_block_resid(resid, blocks, strat, rng)  # noqa: F821
+            shuffled = stratified_block_resid(resid, blocks, strat, rng)
         else:
-            shuffled = moving_block_resid(resid, blocks, rng)  # noqa: F821
+            shuffled = moving_block_resid(resid, blocks, rng)
         y_star = model + shuffled
         fit = fit_free(data["phase"], y_star)
         depths.append(fit["depth_ppm"])
@@ -203,7 +203,7 @@ def convergence_curve(data, base_fit, n_replicates=300, seed=SEED):
     depths = []
     model, resid = base_fit["model"], base_fit["residuals"]
     for _ in range(n_replicates):
-        y_star = model + moving_block_resid(resid, blocks, rng)  # noqa: F821
+        y_star = model + moving_block_resid(resid, blocks, rng)
         depths.append(fit_free(data["phase"], y_star)["depth_ppm"])
     depths = np.array(depths)
     checkpoints = [50, 100, 200, n_replicates]
@@ -280,7 +280,7 @@ def controls_null(data, n_controls=N_CONTROLS, seed=SEED + 1):
     median_level = float(np.median(data["flux"]))
     improvements = []
     for _ in range(n_controls):
-        noise = moving_block_resid(base["residuals"], blocks, rng)  # noqa: F821
+        noise = moving_block_resid(base["residuals"], blocks, rng)
         y = median_level + noise  # no-transit truth: constant level
         f = fit_free(data["phase"], y)
         improvements.append(f["rss_improvement_pct"])
@@ -406,6 +406,27 @@ def software_versions():
         "batman_package": batman.__version__,
         "platform": platform.platform(),
     }
+
+
+def moving_block_resid(resid, blocks, rng):
+    """Superseded prototype helper — intentionally never implemented.
+
+    The block bootstrap this helper belonged to was rebuilt from scratch as
+    `scripts/phase4_block_bootstrap.py`, which is the maintained implementation.
+    This stub replaces the historical NameError with an explicit pointer.
+    """
+    raise NotImplementedError(
+        "statistical_validation.py is a superseded Phase 4 prototype; its block "
+        "bootstrap was never completed here. Use scripts/phase4_block_bootstrap.py."
+    )
+
+
+def stratified_block_resid(resid, blocks, strat, rng):
+    """Superseded prototype helper — see `moving_block_resid`."""
+    raise NotImplementedError(
+        "statistical_validation.py is a superseded Phase 4 prototype; its block "
+        "bootstrap was never completed here. Use scripts/phase4_block_bootstrap.py."
+    )
 
 
 def main():

@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -23,6 +25,7 @@ from research import (  # noqa: E402, I001
     generalization as gen,
     phase11,
     phase11_authz as authz,
+    phase11_b2 as b2,
     phase11_b2a as b2a,
     phase11_b3 as b3,
     phase11_b7 as b7,
@@ -81,6 +84,18 @@ def quarters(effective) -> tuple[set[str], set[str]]:
     return b7g.split_quarters(MANIFEST_DIR, effective)
 
 
+def _iso(hours: float) -> str:
+    return (datetime.now(UTC) + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
+
+
+@pytest.fixture(autouse=True)
+def _approved_authorization_dir(monkeypatch, tmp_path) -> Path:
+    path = tmp_path / authz.AUTHORIZATION_DIRNAME
+    path.mkdir(exist_ok=True)
+    monkeypatch.setattr(authz, "approved_authorization_dir", lambda root: path)
+    return path
+
+
 def _write_doc(
     tmp_path: Path,
     fit: set[str],
@@ -93,7 +108,8 @@ def _write_doc(
         "campaign_id": campaign_id,
         "approver": "test-owner",
         "operator": "test-operator",
-        "issued_at": "2026-10-22T00:00:00Z",
+        "issued_at": _iso(-1),
+        "expires_at": _iso(23),
         "scope": "fit_and_evaluate",
         "authorized_quarters": sorted(fit),
         "authorized_test_quarters": sorted(test),
@@ -101,7 +117,8 @@ def _write_doc(
         "manifest_hashes": v2.validate_manifests(MANIFEST_DIR, protocol),
         "single_run_ack": True,
     }
-    path = tmp_path / name
+    path = tmp_path / authz.AUTHORIZATION_DIRNAME / name
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
     return authz.AuthorizationRef(path=path, sha256=v2.sha256_file(path), campaign_id=campaign_id)
 
@@ -177,13 +194,15 @@ def fitted_campaign(tmp_path_factory, effective, quarters) -> Path:
 
     original_frame = b7.build_fit_frame
     original_capture = v2.capture_provenance
+    original_approved = authz.approved_authorization_dir
     b7.build_fit_frame = lambda **kwargs: frame
     v2.capture_provenance = lambda *args, **kwargs: provenance
+    authz.approved_authorization_dir = lambda root: base / authz.AUTHORIZATION_DIRNAME
     try:
         b7.fit_real(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=base,
             out_dir=base / "campaign",
             authorization=ref,
             model_id="L7_detector_plus_clean_flux",
@@ -191,6 +210,7 @@ def fitted_campaign(tmp_path_factory, effective, quarters) -> Path:
     finally:
         b7.build_fit_frame = original_frame
         v2.capture_provenance = original_capture
+        authz.approved_authorization_dir = original_approved
     return base / "campaign"
 
 
@@ -237,7 +257,7 @@ def test_short_artifact_is_refused_before_claim(effective, campaign, authorizati
         b7g.generate_real_test_trials(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=campaign.parent,
             out_dir=campaign,
             authorization=authorization,
         )
@@ -254,7 +274,7 @@ def test_generation_writes_the_authorized_artifact(effective, campaign, authoriz
     result = b7g.generate_real_test_trials(
         effective=effective,
         manifest_dir=MANIFEST_DIR,
-        repo_root=REPO_ROOT,
+        repo_root=campaign.parent,
         out_dir=campaign,
         authorization=authorization,
     )
@@ -280,7 +300,7 @@ def test_duplicate_generation_is_refused(effective, campaign, authorization, mon
     b7g.generate_real_test_trials(
         effective=effective,
         manifest_dir=MANIFEST_DIR,
-        repo_root=REPO_ROOT,
+        repo_root=campaign.parent,
         out_dir=campaign,
         authorization=authorization,
     )
@@ -289,7 +309,7 @@ def test_duplicate_generation_is_refused(effective, campaign, authorization, mon
         b7g.generate_real_test_trials(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=campaign.parent,
             out_dir=campaign,
             authorization=authorization,
         )
@@ -300,18 +320,20 @@ def test_generation_requires_a_hashed_document(effective, campaign, tmp_path):
         b7g.generate_real_test_trials(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=campaign.parent,
             out_dir=campaign,
             authorization={"campaign_id": CAMPAIGN_ID},
         )
     missing = authz.AuthorizationRef(
-        path=tmp_path / "absent.json", sha256="a" * 64, campaign_id=CAMPAIGN_ID
+        path=tmp_path / authz.AUTHORIZATION_DIRNAME / "absent.json",
+        sha256="a" * 64,
+        campaign_id=CAMPAIGN_ID,
     )
     with pytest.raises(phase11.GateError, match="missing"):
         b7g.generate_real_test_trials(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=campaign.parent,
             out_dir=campaign,
             authorization=missing,
         )
@@ -325,7 +347,7 @@ def test_generation_requires_a_frozen_fitted_state(effective, tmp_path, authoriz
         b7g.generate_real_test_trials(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=tmp_path,
             out_dir=empty,
             authorization=authorization,
         )
@@ -351,7 +373,7 @@ def test_mismatched_marker_does_not_consume_the_access_claim(
     b7g.generate_real_test_trials(
         effective=effective,
         manifest_dir=MANIFEST_DIR,
-        repo_root=REPO_ROOT,
+        repo_root=campaign.parent,
         out_dir=campaign,
         authorization=authorization,
     )
@@ -371,7 +393,7 @@ def test_mismatched_marker_does_not_consume_the_access_claim(
             out_dir=campaign,
             audit_dir=audit,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=campaign.parent,
             resamples=100,
             real_authorization=other_doc,
         )
@@ -383,12 +405,22 @@ def test_mismatched_marker_does_not_consume_the_access_claim(
         out_dir=campaign,
         audit_dir=audit,
         manifest_dir=MANIFEST_DIR,
-        repo_root=REPO_ROOT,
+        repo_root=campaign.parent,
         resamples=100,
         real_authorization=authorization,
     )
     assert result["metrics_sha256"]
     assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "completed"
+    ledger = json.loads((campaign / test_access.MARKER_ACCESS).read_text(encoding="utf-8"))
+    assert ledger["campaign_id"] == CAMPAIGN_ID
+    assert ledger["authorization_sha256"] == authorization.sha256
+    assert ledger["source"] == b7g.SOURCE
+    metrics = json.loads((campaign / b3.METRICS_FILENAME).read_text(encoding="utf-8"))
+    assert metrics["campaign_id"] == CAMPAIGN_ID
+    assert metrics["authorization_sha256"] == authorization.sha256
+    assert metrics["authorization"]["manifest_hashes"] == v2.validate_manifests(
+        MANIFEST_DIR, v2.load_protocol_v21(MANIFEST_DIR / v2.AUTHORIZED_PROTOCOL_NAME)[0]
+    )
 
 
 # --- M1: exact per-cell denominators -----------------------------------------
@@ -483,3 +515,367 @@ def test_denominator_check_refuses_a_short_real_artifact(effective):
 
     with pytest.raises(phase11.GateError, match="frozen denominators"):
         b7g.assert_denominators(_expected_frame(expected).head(10), expected)
+
+
+# --- M-1: generated feature completeness -------------------------------------
+
+
+def test_generator_refuses_a_frame_missing_a_fitted_feature(
+    effective, campaign, authorization, monkeypatch
+):
+    frame = _expected_frame(b7g.expected_denominators(MANIFEST_DIR, effective)).drop(
+        columns=["std_ppm"]
+    )
+    monkeypatch.setattr(b7g, "_build_test_rows", lambda **kwargs: frame)
+
+    with pytest.raises(phase11.GateError, match="missing the fitted model features"):
+        b7g.generate_real_test_trials(
+            effective=effective,
+            manifest_dir=MANIFEST_DIR,
+            repo_root=campaign.parent,
+            out_dir=campaign,
+            authorization=authorization,
+        )
+
+    assert test_access.marker_state(campaign, test_access.MARKER_GENERATION) is None
+    assert not (campaign / b2.TRIALS_FILENAME).exists()
+
+
+# --- M2/M3/L3: ledger and marker consistency ---------------------------------
+
+
+def test_generation_marker_records_the_authorization_binding(
+    effective, campaign, authorization, monkeypatch
+):
+    frame = _expected_frame(b7g.expected_denominators(MANIFEST_DIR, effective))
+    monkeypatch.setattr(b7g, "_build_test_rows", lambda **kwargs: frame)
+    b7g.generate_real_test_trials(
+        effective=effective,
+        manifest_dir=MANIFEST_DIR,
+        repo_root=campaign.parent,
+        out_dir=campaign,
+        authorization=authorization,
+    )
+    record = json.loads((campaign / test_access.MARKER_GENERATION).read_text(encoding="utf-8"))
+
+    assert record["authorization"]["manifest_hashes"] == v2.validate_manifests(
+        MANIFEST_DIR, v2.load_protocol_v21(MANIFEST_DIR / v2.AUTHORIZED_PROTOCOL_NAME)[0]
+    )
+    assert record["authorization_sha256"] == authorization.sha256
+    assert record["expected_denominators"]["nulls_pooled"] == 152
+
+
+def _tamper_marker(campaign: Path, mutate) -> None:
+    path = campaign / test_access.MARKER_GENERATION
+    record = json.loads(path.read_text(encoding="utf-8"))
+    mutate(record)
+    path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+
+
+def _generate(effective, campaign, authorization, monkeypatch) -> None:
+    frame = _expected_frame(b7g.expected_denominators(MANIFEST_DIR, effective))
+    monkeypatch.setattr(b7g, "_build_test_rows", lambda **kwargs: frame)
+    b7g.generate_real_test_trials(
+        effective=effective,
+        manifest_dir=MANIFEST_DIR,
+        repo_root=campaign.parent,
+        out_dir=campaign,
+        authorization=authorization,
+    )
+
+
+def _evaluate(effective, campaign, authorization, audit):
+    return b3.evaluate_test(
+        effective=effective,
+        out_dir=campaign,
+        audit_dir=audit,
+        manifest_dir=MANIFEST_DIR,
+        repo_root=campaign.parent,
+        resamples=100,
+        real_authorization=authorization,
+    )
+
+
+def test_marker_expected_denominator_mismatch_is_refused_before_claim(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    _tamper_marker(
+        campaign, lambda record: record["expected_denominators"].update(nulls_pooled=151)
+    )
+
+    with pytest.raises(phase11.GateError, match="expected_denominators"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+    assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) is None
+
+
+def test_marker_observed_denominator_mismatch_is_refused(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    _tamper_marker(
+        campaign, lambda record: record["observed_denominators"].update(nulls_pooled=151)
+    )
+
+    with pytest.raises(phase11.GateError, match="observed_denominators"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+    assert not (campaign / b3.METRICS_FILENAME).exists()
+
+
+# --- M4: post-claim failure is terminal and auditable ------------------------
+
+
+def test_post_claim_unexpected_failure_is_recorded_and_terminal(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    monkeypatch.setattr(
+        b3,
+        "_score_frame",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("synthetic scoring failure")),
+    )
+
+    with pytest.raises(RuntimeError, match="synthetic scoring failure"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    failure = json.loads((campaign / b3.FAILURE_FILENAME).read_text(encoding="utf-8"))
+    assert failure["status"] == "failed_after_access_claim"
+    assert failure["terminal"] is True
+    assert failure["failure_type"] == "RuntimeError"
+    assert failure["campaign_id"] == CAMPAIGN_ID
+    assert failure["authorization_sha256"] == authorization.sha256
+    assert failure["access_marker_state"] == "started"
+    assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "started"
+    assert not (campaign / b3.METRICS_FILENAME).exists()
+
+    with pytest.raises(phase11.GateError, match="one-shot"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+
+def test_post_claim_gate_error_is_recorded(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    _tamper_marker(
+        campaign, lambda record: record["observed_denominators"].update(nulls_pooled=151)
+    )
+
+    with pytest.raises(phase11.GateError, match="observed_denominators"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    failure = json.loads((campaign / b3.FAILURE_FILENAME).read_text(encoding="utf-8"))
+    assert failure["failure_type"] == "GateError"
+    assert failure["access_marker_state"] == "started"
+    assert not (campaign / b3.METRICS_FILENAME).exists()
+    with pytest.raises(phase11.GateError, match="one-shot"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+
+def test_post_claim_integrity_error_is_recorded(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    trials = campaign / b2.TRIALS_FILENAME
+    trials.write_bytes(trials.read_bytes() + b" \n")
+
+    with pytest.raises(runner.IntegrityError, match="does not match the generation record"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    failure = json.loads((campaign / b3.FAILURE_FILENAME).read_text(encoding="utf-8"))
+    assert failure["failure_type"] == "IntegrityError"
+    assert failure["campaign_id"] == CAMPAIGN_ID
+    with pytest.raises(phase11.GateError, match="one-shot"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+
+def test_marker_missing_observed_denominators_is_refused(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    _tamper_marker(campaign, lambda record: record.pop("observed_denominators"))
+
+    with pytest.raises(phase11.GateError, match="no observed_denominators record"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+    assert (campaign / b3.FAILURE_FILENAME).is_file()
+
+
+def test_metrics_write_failure_preserves_the_original_error_and_claim(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    real_write = v2.write_json_with_sidecar
+
+    def failing_write(path, payload):
+        if Path(path).name == b3.METRICS_FILENAME:
+            raise OSError("synthetic metrics write failure")
+        return real_write(path, payload)
+
+    monkeypatch.setattr(v2, "write_json_with_sidecar", failing_write)
+
+    with pytest.raises(OSError, match="synthetic metrics write failure"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    assert (campaign / b3.FAILURE_FILENAME).is_file()
+    assert not (campaign / b3.METRICS_FILENAME).exists()
+    with pytest.raises(phase11.GateError, match="one-shot"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+
+def test_ledger_completion_failure_quarantines_metrics(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+
+    def failing_complete(*args, **kwargs):
+        raise phase11.GateError("synthetic completion failure")
+
+    monkeypatch.setattr(b3.test_access, "complete_marker", failing_complete)
+
+    with pytest.raises(phase11.GateError, match="synthetic completion failure"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    assert not (campaign / b3.METRICS_FILENAME).exists()
+    assert (campaign / b3.FAILED_METRICS_FILENAME).is_file()
+    assert (campaign / b3.FAILURE_FILENAME).is_file()
+    assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "started"
+
+
+def test_failure_record_write_failure_is_surfaced_and_original_type_kept(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    real_write = v2.write_json_with_sidecar
+
+    def failing_write(path, payload):
+        if Path(path).name == b3.FAILURE_FILENAME:
+            raise OSError("synthetic failure-record write failure")
+        return real_write(path, payload)
+
+    monkeypatch.setattr(v2, "write_json_with_sidecar", failing_write)
+    monkeypatch.setattr(
+        b3,
+        "_score_frame",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("synthetic scoring failure")),
+    )
+
+    with pytest.raises(RuntimeError, match="synthetic scoring failure") as captured:
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+    notes = " ".join(getattr(captured.value, "__notes__", []))
+    assert "failure record could not be written" in notes
+    assert not (campaign / b3.FAILURE_FILENAME).exists()
+    assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "started"
+    with pytest.raises(phase11.GateError, match="one-shot"):
+        _evaluate(effective, campaign, authorization, tmp_path / "refusals")
+
+
+def test_concurrent_evaluations_acquire_the_claim_once(
+    effective, campaign, authorization, tmp_path, monkeypatch
+):
+    _generate(effective, campaign, authorization, monkeypatch)
+    audit = tmp_path / "refusals"
+
+    def attempt():
+        try:
+            _evaluate(effective, campaign, authorization, audit)
+            return "ok"
+        except Exception as exc:  # noqa: BLE001 - the loser is expected to refuse
+            return f"{type(exc).__name__}: {exc}"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = [future.result() for future in [pool.submit(attempt), pool.submit(attempt)]]
+
+    assert results.count("ok") == 1, results
+    assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "completed"
+
+
+# --- L4: fitted-contract validation before generation ------------------------
+
+
+def test_generator_refuses_an_invalid_fitted_contract(
+    effective, campaign, authorization, monkeypatch
+):
+    path = campaign / "fitted.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload.pop("detector_thresholds")
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    (campaign / "fitted.sha256").write_text(
+        f"{v2.sha256_file(path)}  fitted.json\n", encoding="utf-8"
+    )
+    frame = _expected_frame(b7g.expected_denominators(MANIFEST_DIR, effective))
+    monkeypatch.setattr(b7g, "_build_test_rows", lambda **kwargs: frame)
+
+    with pytest.raises(phase11.GateError, match="missing keys"):
+        b7g.generate_real_test_trials(
+            effective=effective,
+            manifest_dir=MANIFEST_DIR,
+            repo_root=campaign.parent,
+            out_dir=campaign,
+            authorization=authorization,
+        )
+    assert test_access.marker_state(campaign, test_access.MARKER_GENERATION) is None
+
+
+@pytest.mark.parametrize(
+    "mutate, message",
+    [
+        (lambda fitted: fitted.pop("thresholds"), "missing keys"),
+        (lambda fitted: fitted.update(features=[]), "no usable feature list"),
+        (lambda fitted: fitted.update(features=["not_a_feature"]), "unknown features"),
+        (lambda fitted: fitted.update(imputation_medians=[1.0, 2.0]), "inconsistent with features"),
+        (lambda fitted: fitted.update(thresholds={}), "no thresholds table"),
+        (lambda fitted: fitted.update(counts={"train_rows": -1}), "invalid train_rows count"),
+        (lambda fitted: fitted.update(model_file=""), "no model file reference"),
+        (lambda fitted: fitted.update(unknown_key=1), "unexpected keys"),
+        (lambda fitted: fitted.update(model_id=1), "no usable model_id"),
+        (lambda fitted: fitted.update(dropped_features="snr"), "dropped_features"),
+        (
+            lambda fitted: fitted.update(
+                counts={"train_rows": 0, "val_rows": 1, "train_injected": 0}
+            ),
+            "counts must be positive",
+        ),
+        (
+            lambda fitted: fitted.update(
+                counts={"train_rows": 1, "val_rows": 1, "train_injected": 2}
+            ),
+            "exceeds train_rows",
+        ),
+        (
+            lambda fitted: fitted.update(thresholds={"observed": {"threshold": float("inf")}}),
+            "not finite",
+        ),
+    ],
+)
+def test_fitted_contract_validation_is_strict(mutate, message):
+    fitted = {
+        "model_id": "L7_detector_plus_clean_flux",
+        "features": ["snr"],
+        "dropped_features": [],
+        "imputation_medians": [0.0],
+        "thresholds": {"observed": {"threshold": 0.5}},
+        "detector_thresholds": {"observed": {"threshold": 3.0}},
+        "counts": {"train_rows": 1, "val_rows": 1, "train_injected": 1},
+        "model_file": "model.pkl",
+    }
+    mutate(fitted)
+
+    with pytest.raises(phase11.GateError, match=message):
+        b7g.validate_fitted_contract(fitted)
+
+
+def test_fitted_contract_requires_protocol_strata():
+    fitted = {
+        "model_id": "L7_detector_plus_clean_flux",
+        "features": ["snr"],
+        "dropped_features": [],
+        "imputation_medians": [0.0],
+        "thresholds": {"observed": {"threshold": 0.5}},
+        "detector_thresholds": {"observed": {"threshold": 3.0}},
+        "counts": {"train_rows": 1, "val_rows": 1, "train_injected": 1},
+        "model_file": "model.pkl",
+    }
+
+    with pytest.raises(phase11.GateError, match="missing strata"):
+        b7g.validate_fitted_contract(fitted, noise_conditions=["observed", "amplified_x2"])
+    b7g.validate_fitted_contract(fitted, noise_conditions=["observed"])

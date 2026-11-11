@@ -1,0 +1,32 @@
+{
+  "label": "smoke",
+  "datasets": [
+    "kepler",
+    "tess"
+  ],
+  "chunks": {
+    "kepler": 3,
+    "tess": 3
+  },
+  "depths_ppm": [
+    0,
+    150,
+    300
+  ],
+  "noise_conditions": [
+    "observed"
+  ],
+  "offset_draws": 1,
+  "seed": 20261022,
+  "tolerance_days": 0.0377,
+  "search_half_days": 0.2,
+  "search_step_days": 0.0025,
+  "features": [
+    "min_depth_ppm",
+    "std_ppm",
+    "mad_ppm",
+    "gap_fraction",
+    "mean_flux",
+    "n_points"
+  ]
+}

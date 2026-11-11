@@ -77,6 +77,7 @@ def b7_test_quarters(manifest_dir: Path, effective: Mapping) -> set[str]:
 
 def _fit_authorization(
     manifest_dir: Path,
+    repo_root: Path,
     effective: Mapping,
     fit_quarters: set[str],
     authorization: authz.AuthorizationRef,
@@ -87,6 +88,7 @@ def _fit_authorization(
         authorization,
         protocol_sha256=v2.AUTHORIZED_PROTOCOL_SHA256,
         manifest_hashes=manifests,
+        location=authz.DocumentLocation(manifest_dir=Path(manifest_dir), repo_root=Path(repo_root)),
         fit_quarters=fit_quarters,
         test_quarters=b7_test_quarters(manifest_dir, effective),
         required_scope="fit",
@@ -441,7 +443,7 @@ def build_fit_frame(
     """Build real fit rows from frozen fit quarters only. No test path is ever constructed."""
     b1.assert_approved_protocol(effective, v2.AUTHORIZED_PROTOCOL_SHA256)
     fit_quarters, test_quarters = protocol_fit_quarters(manifest_dir, effective)
-    _fit_authorization(manifest_dir, effective, fit_quarters, authorization)
+    _fit_authorization(manifest_dir, Path(root), effective, fit_quarters, authorization)
     windows = fit_windows(manifest_dir, effective, fit_quarters, test_quarters)
     plan = phase11.plan_trials(windows, dict(effective), "fit")
     assert_plan_fit_only(plan, fit_quarters, test_quarters)
@@ -532,7 +534,7 @@ def fit_real(
     b1.assert_approved_protocol(effective, v2.AUTHORIZED_PROTOCOL_SHA256)
     fit_quarters, _test_quarters = protocol_fit_quarters(manifest_dir, effective)
     document, authorization_digest = _fit_authorization(
-        manifest_dir, effective, fit_quarters, authorization
+        manifest_dir, repo_root, effective, fit_quarters, authorization
     )
     _assert_no_test_exposure(out_dir)
     _assert_no_test_exposure(manifest_dir)

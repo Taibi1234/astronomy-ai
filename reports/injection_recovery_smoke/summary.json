@@ -1,0 +1,322 @@
+{
+  "experiment": "phase10-injection-recovery",
+  "version": "1.0.0",
+  "mode": "smoke",
+  "status": "completed",
+  "started_at": "2026-10-22T00:13:55+00:00",
+  "finished_at": "2026-10-22T00:13:57+00:00",
+  "runtime_seconds": 1.62,
+  "config": {
+    "label": "smoke",
+    "datasets": [
+      "kepler",
+      "tess"
+    ],
+    "chunks": {
+      "kepler": 3,
+      "tess": 3
+    },
+    "depths_ppm": [
+      0,
+      150,
+      300
+    ],
+    "noise_conditions": [
+      "observed"
+    ],
+    "offset_draws": 1,
+    "seed": 20261022,
+    "tolerance_days": 0.0377,
+    "search_half_days": 0.2,
+    "search_step_days": 0.0025,
+    "features": [
+      "min_depth_ppm",
+      "std_ppm",
+      "mad_ppm",
+      "gap_fraction",
+      "mean_flux",
+      "n_points"
+    ]
+  },
+  "counts": {
+    "trials_total": 18,
+    "trials_valid": 18,
+    "trials_invalid": 0,
+    "controls_evaluated_for_fpr": 2,
+    "chunks": {
+      "kepler": 3,
+      "tess": 3
+    },
+    "splits": {
+      "kepler": {
+        "chunks": {
+          "train": 1,
+          "val": 1,
+          "test": 1
+        }
+      },
+      "tess": {
+        "chunks": {
+          "train": 1,
+          "val": 1,
+          "test": 1
+        }
+      }
+    }
+  },
+  "excluded_trials": [],
+  "thresholds": {
+    "kepler|observed": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 2
+    },
+    "tess|observed": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 2
+    }
+  },
+  "recovery_by_depth_all_splits": [
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 4,
+      "trials": 6,
+      "fraction": 0.6666666666666666,
+      "wilson_low": 0.29998832134152864,
+      "wilson_high": 0.9032306674407831,
+      "median_recovered_depth_ppm": 205.68609571113495,
+      "median_timing_error_days": 0.006137125173181615
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 6,
+      "trials": 6,
+      "fraction": 1.0,
+      "wilson_low": 0.6096569663469354,
+      "wilson_high": 0.9999999999999999,
+      "median_recovered_depth_ppm": 358.4456922340821,
+      "median_timing_error_days": 0.002253031827606739
+    }
+  ],
+  "recovery_by_depth_test_split": [
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 1,
+      "trials": 2,
+      "fraction": 0.5,
+      "wilson_low": 0.09452865480086614,
+      "wilson_high": 0.9054713451991339,
+      "median_recovered_depth_ppm": 188.45884294813195,
+      "median_timing_error_days": 0.006137125173181615
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 2,
+      "trials": 2,
+      "fraction": 1.0,
+      "wilson_low": 0.34237195288961925,
+      "wilson_high": 1.0,
+      "median_recovered_depth_ppm": 350.6335248672067,
+      "median_timing_error_days": 0.006137125173181615
+    }
+  ],
+  "recovery_by_dataset_and_noise": [
+    {
+      "dataset": "kepler",
+      "noise_condition": "observed",
+      "recovered": 6,
+      "trials": 6,
+      "fraction": 1.0,
+      "wilson_low": 0.6096569663469354,
+      "wilson_high": 0.9999999999999999
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "observed",
+      "recovered": 4,
+      "trials": 6,
+      "fraction": 0.6666666666666666,
+      "wilson_low": 0.29998832134152864,
+      "wilson_high": 0.9032306674407831
+    }
+  ],
+  "false_positive_rate": {
+    "controls": 2,
+    "false_positives": 0,
+    "rate": 0.0,
+    "wilson_low": 0.0,
+    "wilson_high": 0.6576280471103807,
+    "definition": "zero-depth trials in test-split chunks (never used for calibration)"
+  },
+  "benchmark": {
+    "features": [
+      "min_depth_ppm",
+      "std_ppm",
+      "mad_ppm",
+      "gap_fraction",
+      "mean_flux",
+      "n_points"
+    ],
+    "splits": {
+      "train": {
+        "windows": 6,
+        "groups": 2,
+        "positive": 4,
+        "negative": 2
+      },
+      "val": {
+        "windows": 6,
+        "groups": 2,
+        "positive": 4,
+        "negative": 2
+      },
+      "test": {
+        "windows": 6,
+        "groups": 2,
+        "positive": 4,
+        "negative": 2
+      }
+    },
+    "methods": {
+      "physics_matched_filter": {
+        "n": 6,
+        "positive": 4,
+        "negative": 2,
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.8571428571428571,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "confusion_matrix": [
+          [
+            2,
+            0
+          ],
+          [
+            1,
+            3
+          ]
+        ]
+      },
+      "logistic_regression": {
+        "n": 6,
+        "positive": 4,
+        "negative": 2,
+        "precision": 0.6666666666666666,
+        "recall": 0.5,
+        "f1": 0.5714285714285714,
+        "roc_auc": 0.75,
+        "pr_auc": 0.8875,
+        "confusion_matrix": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        "brier": 0.27157188086344347
+      },
+      "random_forest": {
+        "n": 6,
+        "positive": 4,
+        "negative": 2,
+        "precision": 0.75,
+        "recall": 0.75,
+        "f1": 0.75,
+        "roc_auc": 0.625,
+        "pr_auc": 0.7208333333333333,
+        "confusion_matrix": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "selected": true,
+        "validation_f1": 0.8571428571428571,
+        "baseline_validation_f1": 0.6666666666666666
+      },
+      "dummy": {
+        "n": 6,
+        "positive": 4,
+        "negative": 2,
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "roc_auc": 0.25,
+        "pr_auc": 0.5833333333333333,
+        "confusion_matrix": [
+          [
+            0,
+            2
+          ],
+          [
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    "notes": [
+      "All methods are evaluated on the same test chunks and labels.",
+      "The physics detector's threshold is calibrated on train-split controls only.",
+      "ML preprocessing (scaling, imputation) is fitted on train rows only."
+    ],
+    "logistic_threshold": {
+      "value": 0.6387392994617038,
+      "selected_on": "validation only"
+    },
+    "per_depth_test": [
+      {
+        "requested_depth_ppm": 150.0,
+        "trials": 2,
+        "physics_recovered": 1,
+        "logistic_detected": 1
+      },
+      {
+        "requested_depth_ppm": 300.0,
+        "trials": 2,
+        "physics_recovered": 2,
+        "logistic_detected": 1
+      }
+    ],
+    "status": "ok"
+  },
+  "limitations": [
+    "Independent units are contiguous chunks (3-4 per dataset), not individual cadences.",
+    "Injections are coherent across each chunk's transits, at a hidden phase offset from the published ephemeris.",
+    "Synthetic injection recovery does not establish real-planet detection performance.",
+    "The ML benchmark uses six time-domain features and very few independent groups; treat it as exploratory."
+  ],
+  "provenance": {
+    "source_hashes": {
+      "kepler": "7dd1cb33d3dea7109db42c0277cae8f4bd3dfd1f9cf9d44e4b4c613521657854",
+      "tess": "ac582c1cf89996ff54d3d9f9035512f8ae6adb582a8ed5feeb5517cd13838f1f"
+    },
+    "seed": 20261022,
+    "python": "3.14.3",
+    "platform": "Windows-11-10.0.22621-SP0",
+    "packages": {
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "scikit-learn": "1.9.1",
+      "batman": "2.5.1"
+    },
+    "git_commit": "5ef9df6",
+    "command": "python -m research.run_experiment --mode smoke"
+  },
+  "artifacts": {
+    "trial_results": "trial_results.csv",
+    "summary": "summary.json",
+    "config": "config.json",
+    "plot_data": "plot_data.json",
+    "report": "recovery_report.md"
+  }
+}

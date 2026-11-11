@@ -60,9 +60,7 @@ def test_operating_point_counts_fpr_and_recall_exactly():
         _trial(trial_id="i3", snr=4.0, delta_true_days=0.10, delta_est_days=0.00),
         _trial(trial_id="i4", snr=2.0, delta_true_days=0.00, delta_est_days=0.00),
     ]
-    report = phase11.physics_operating_point(
-        _frame(rows), THRESHOLDS, resamples=200
-    )
+    report = phase11.physics_operating_point(_frame(rows), THRESHOLDS, resamples=200)
     pooled = report["pooled"]
     assert pooled["null_trials"] == 4
     assert pooled["false_positives"] == 2
@@ -78,9 +76,7 @@ def test_operating_point_counts_fpr_and_recall_exactly():
 def test_timing_tolerance_is_applied():
     outside = _trial(delta_true_days=0.0, delta_est_days=core.TOLERANCE_DAYS + 0.01, snr=5.0)
     inside = _trial(delta_true_days=0.0, delta_est_days=core.TOLERANCE_DAYS - 0.001, snr=5.0)
-    report = phase11.physics_operating_point(
-        _frame([outside, inside]), THRESHOLDS, resamples=100
-    )
+    report = phase11.physics_operating_point(_frame([outside, inside]), THRESHOLDS, resamples=100)
     assert report["pooled"]["recovered"] == 1
 
 

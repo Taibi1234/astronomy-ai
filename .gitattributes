@@ -2,3 +2,5 @@
 # Preserve their exact bytes on every platform; only the sidecars are plain text.
 reports/phase11_generalization/*.json -text -diff
 reports/phase11_generalization/*.sha256 text eol=lf
+data/processed/kepler_kepler_10.csv -text
+data/processed/tess_kepler_10.csv -text

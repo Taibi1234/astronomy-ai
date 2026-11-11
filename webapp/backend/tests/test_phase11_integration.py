@@ -187,9 +187,7 @@ def test_freeze_reload_predicts_identically(protocol, frozen_protocol, tmp_path)
     reloaded = __import__("pickle").loads((tmp_path / loaded["model_file"]).read_bytes())
     check = frame[frame["split"] == "val"]
     matrix = _matrix(check, loaded["features"], loaded["imputation_medians"])
-    assert np.allclose(
-        reloaded.predict_proba(matrix)[:, 1], model.predict_proba(matrix)[:, 1]
-    )
+    assert np.allclose(reloaded.predict_proba(matrix)[:, 1], model.predict_proba(matrix)[:, 1])
 
 
 def test_fit_refuses_test_rows_with_a_real_factory(protocol):
@@ -319,15 +317,13 @@ def test_run_campaign_on_synthetic_quarters_uses_each_window(tmp_path, monkeypat
 
 def test_trial_role_survives_a_csv_roundtrip(tmp_path):
     """'null' is a pandas NA token, so the trial vocabulary must not use it."""
-    windows = json.loads(
-        (MANIFEST_DIR / "windows_primary.json").read_text(encoding="utf-8")
-    )["windows"]
+    windows = json.loads((MANIFEST_DIR / "windows_primary.json").read_text(encoding="utf-8"))[
+        "windows"
+    ]
     null_window = next(
         window for window in windows if window["role"] == "null" and window["split"] == "train"
     )
-    plan = phase11.plan_trials(
-        [null_window], phase11.build_protocol(MANIFEST_DIR), "fit"
-    )
+    plan = phase11.plan_trials([null_window], phase11.build_protocol(MANIFEST_DIR), "fit")
     assert set(plan["role"]) == {"null_window"}
     path = tmp_path / "trials.csv"
     plan.to_csv(path, index=False)

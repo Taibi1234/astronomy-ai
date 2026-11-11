@@ -10,7 +10,7 @@ equal the recomputation. The B3 evaluator repeats the observed-count check befor
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import numpy as np
@@ -23,7 +23,7 @@ from . import phase11_b1 as b1
 from . import phase11_b2 as b2
 from . import phase11_b7 as b7
 from . import phase11_v2 as v2
-from .features import time_domain_features
+from .features import FEATURE_NAMES, time_domain_features
 from .phase11 import GateError
 
 TRIALS_FILENAME = "trials_test.csv"
@@ -32,6 +32,17 @@ GENERATOR_NAME = "phase11-v2-b7-generator"
 WINDOW_MANIFEST = "windows_primary.json"
 WINDOW_DAYS = 5.0
 MISSION = "kepler"
+DETECTOR_OUTPUTS = ("snr", "depth_est_ppm", "sigma_ppm")
+REQUIRED_FITTED_KEYS = (
+    "model_id",
+    "features",
+    "dropped_features",
+    "imputation_medians",
+    "thresholds",
+    "detector_thresholds",
+    "counts",
+    "model_file",
+)
 REQUIRED_COLUMNS = (
     "trial_id",
     "quarter",
@@ -49,6 +60,101 @@ REQUIRED_COLUMNS = (
     "depth_est_ppm",
     "sigma_ppm",
 )
+
+
+ALLOWED_FITTED_KEYS = frozenset(
+    REQUIRED_FITTED_KEYS
+    + (
+        "phase",
+        "schema_version",
+        "protocol_version",
+        "protocol_sha256",
+        "provenance",
+        "model_sha256",
+        "_sha256",
+    )
+)
+
+
+def _validate_features(fitted: Mapping) -> None:
+    model_id = fitted["model_id"]
+    if not isinstance(model_id, str) or not model_id:
+        raise GateError("frozen fitted state has no usable model_id")
+    dropped = fitted["dropped_features"]
+    if not isinstance(dropped, list) or not all(isinstance(name, str) for name in dropped):
+        raise GateError("frozen fitted state dropped_features must be a list of strings")
+    features = fitted["features"]
+    if (
+        not isinstance(features, list)
+        or not features
+        or not all(isinstance(name, str) and name for name in features)
+    ):
+        raise GateError("frozen fitted state has no usable feature list")
+    unknown = sorted(set(features) - (set(DETECTOR_OUTPUTS) | set(FEATURE_NAMES)))
+    if unknown:
+        raise GateError(f"frozen fitted state names unknown features {unknown}")
+    medians = fitted["imputation_medians"]
+    if (
+        not isinstance(medians, list)
+        or len(medians) != len(features)
+        or not all(
+            isinstance(value, (int, float)) and not isinstance(value, bool) for value in medians
+        )
+    ):
+        raise GateError("frozen fitted state has imputation medians inconsistent with features")
+
+
+def _validate_tables(fitted: Mapping, noise_conditions: Sequence[str] | None) -> None:
+    for name in ("thresholds", "detector_thresholds"):
+        table = fitted[name]
+        if not isinstance(table, Mapping) or not table:
+            raise GateError(f"frozen fitted state has no {name} table")
+        for stratum, entry in table.items():
+            if not isinstance(entry, Mapping) or "threshold" not in entry:
+                raise GateError(f"frozen fitted state {name} entry for {stratum!r} is invalid")
+            value = float(entry["threshold"])
+            if not np.isfinite(value):
+                raise GateError(
+                    f"frozen fitted state {name} threshold for {stratum!r} is not finite"
+                )
+        if noise_conditions is not None:
+            missing = sorted(set(str(item) for item in noise_conditions) - set(map(str, table)))
+            if missing:
+                raise GateError(f"frozen fitted state {name} table is missing strata {missing}")
+
+
+def _validate_counts(fitted: Mapping) -> None:
+    counts = fitted["counts"]
+    if not isinstance(counts, Mapping):
+        raise GateError("frozen fitted state has no counts block")
+    values = {}
+    for key in ("train_rows", "val_rows", "train_injected"):
+        value = counts.get(key)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise GateError(f"frozen fitted state has an invalid {key} count")
+        values[key] = value
+    if values["train_rows"] < 1 or values["val_rows"] < 1:
+        raise GateError("frozen fitted state counts must be positive")
+    if values["train_injected"] > values["train_rows"]:
+        raise GateError("frozen fitted state train_injected exceeds train_rows")
+    if not isinstance(fitted["model_file"], str) or not fitted["model_file"]:
+        raise GateError("frozen fitted state has no model file reference")
+
+
+def validate_fitted_contract(
+    fitted: Mapping, *, noise_conditions: Sequence[str] | None = None
+) -> dict:
+    """L4/L-3: closed-schema validation before any output artifact is produced."""
+    missing = [key for key in REQUIRED_FITTED_KEYS if key not in fitted]
+    if missing:
+        raise GateError(f"frozen fitted state is missing keys {missing}")
+    extra = sorted(set(fitted) - ALLOWED_FITTED_KEYS)
+    if extra:
+        raise GateError(f"frozen fitted state has unexpected keys {extra}")
+    _validate_features(fitted)
+    _validate_tables(fitted, noise_conditions)
+    _validate_counts(fitted)
+    return dict(fitted)
 
 
 def _manifests(manifest_dir: Path, effective: Mapping) -> dict[str, str]:
@@ -301,7 +407,12 @@ def _build_test_rows(
     return frame
 
 
-def assert_generated_frame(frame: pd.DataFrame, test_quarters: set[str], campaign_id: str) -> None:
+def assert_generated_frame(
+    frame: pd.DataFrame,
+    test_quarters: set[str],
+    campaign_id: str,
+    required_features: Sequence[str] = (),
+) -> None:
     if frame.empty:
         raise GateError("the generator produced no test rows")
     if set(frame["split"].unique()) != {"test"}:
@@ -319,6 +430,12 @@ def assert_generated_frame(frame: pd.DataFrame, test_quarters: set[str], campaig
         )
     if bool(frame["trial_id"].duplicated().any()):
         raise GateError("the generated artifact has duplicate trial ids")
+    missing = sorted(set(str(name) for name in required_features) - set(frame.columns))
+    if missing:
+        raise GateError(
+            f"the generated artifact is missing the fitted model features {missing}; "
+            "refusing before the generation claim"
+        )
 
 
 def generate_real_test_trials(
@@ -336,13 +453,17 @@ def generate_real_test_trials(
         authorization,
         protocol_sha256=v2.AUTHORIZED_PROTOCOL_SHA256,
         manifest_hashes=_manifests(manifest_dir, effective),
+        location=authz.DocumentLocation(manifest_dir=Path(manifest_dir), repo_root=Path(repo_root)),
         fit_quarters=fit_quarters,
         test_quarters=test_quarters,
         required_scope="campaign",
     )
     campaign = b2.resolve_campaign_dir(out_dir, manifest_dir=manifest_dir, repo_root=repo_root)
     phase11.assert_test_generation_allowed(campaign)
-    fitted = v2.load_fitted_v21(campaign, v2.AUTHORIZED_PROTOCOL_SHA256)
+    fitted = validate_fitted_contract(
+        v2.load_fitted_v21(campaign, v2.AUTHORIZED_PROTOCOL_SHA256),
+        noise_conditions=effective["injection"]["noise_conditions"],
+    )
     test_access.assert_no_markers(campaign)
 
     expected = expected_denominators(manifest_dir, effective)
@@ -353,8 +474,9 @@ def generate_real_test_trials(
         campaign_id=authorization.campaign_id,
         test_quarters=test_quarters,
     )
-    assert_generated_frame(frame, test_quarters, authorization.campaign_id)
+    assert_generated_frame(frame, test_quarters, authorization.campaign_id, fitted["features"])
     observed = jsonable_observed(assert_denominators(frame, expected))
+    binding = authz.authorization_binding(document, digest)
 
     campaign.mkdir(parents=True, exist_ok=True)
     b2.resolve_campaign_dir(campaign, manifest_dir=manifest_dir, repo_root=repo_root)
@@ -367,6 +489,7 @@ def generate_real_test_trials(
             "source": SOURCE,
             "campaign_id": authorization.campaign_id,
             "authorization_sha256": digest,
+            "authorization": binding,
             "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
             "model_id": fitted.get("model_id"),
             "window_days": WINDOW_DAYS,

@@ -1,0 +1,195 @@
+{
+  "recovery_by_depth": [
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 4,
+      "trials": 6,
+      "fraction": 0.6666666666666666,
+      "wilson_low": 0.29998832134152864,
+      "wilson_high": 0.9032306674407831,
+      "median_recovered_depth_ppm": 205.68609571113495,
+      "median_timing_error_days": 0.006137125173181615
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 6,
+      "trials": 6,
+      "fraction": 1.0,
+      "wilson_low": 0.6096569663469354,
+      "wilson_high": 0.9999999999999999,
+      "median_recovered_depth_ppm": 358.4456922340821,
+      "median_timing_error_days": 0.002253031827606739
+    }
+  ],
+  "recovery_by_depth_test": [
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 1,
+      "trials": 2,
+      "fraction": 0.5,
+      "wilson_low": 0.09452865480086614,
+      "wilson_high": 0.9054713451991339,
+      "median_recovered_depth_ppm": 188.45884294813195,
+      "median_timing_error_days": 0.006137125173181615
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 2,
+      "trials": 2,
+      "fraction": 1.0,
+      "wilson_low": 0.34237195288961925,
+      "wilson_high": 1.0,
+      "median_recovered_depth_ppm": 350.6335248672067,
+      "median_timing_error_days": 0.006137125173181615
+    }
+  ],
+  "recovery_by_dataset_and_noise": [
+    {
+      "dataset": "kepler",
+      "noise_condition": "observed",
+      "recovered": 6,
+      "trials": 6,
+      "fraction": 1.0,
+      "wilson_low": 0.6096569663469354,
+      "wilson_high": 0.9999999999999999
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "observed",
+      "recovered": 4,
+      "trials": 6,
+      "fraction": 0.6666666666666666,
+      "wilson_low": 0.29998832134152864,
+      "wilson_high": 0.9032306674407831
+    }
+  ],
+  "controls": {
+    "snr": [
+      1.5494529490851416,
+      2.4504131669868,
+      0.9477929470033637,
+      0.5625653720144118,
+      2.0209769648539626,
+      1.4700751252638395
+    ],
+    "thresholds": {
+      "kepler|observed": 3.0,
+      "tess|observed": 3.0
+    },
+    "n": 6,
+    "false_positives": 0
+  },
+  "recovered_vs_injected": [
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 190.69467236220447,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 353.56930728482615,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 247.17337728660343,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 419.3495792482641,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 188.45884294813195,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 363.32207718333814,
+      "recovered": true,
+      "dataset": "kepler"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 65.50441978528194,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 198.12650277445303,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 220.67751906006546,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 383.0755713395935,
+      "recovered": true,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered_depth_ppm": 180.62404262938443,
+      "recovered": false,
+      "dataset": "tess"
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered_depth_ppm": 337.9449725510752,
+      "recovered": true,
+      "dataset": "tess"
+    }
+  ],
+  "timing_errors_days": [
+    0.002140628178938453,
+    0.0003593718210615493,
+    0.0005097486726691539,
+    0.0005097486726691539,
+    0.0039963149825443245,
+    0.0039963149825443245,
+    0.044726421529873064,
+    0.00027357847012697556,
+    0.03331691252970073,
+    0.005816912529700707,
+    0.008277935363818906,
+    0.008277935363818906
+  ],
+  "timing_tolerance_days": 0.0377,
+  "benchmark": {
+    "physics_matched_filter": {
+      "f1": 0.8571428571428571,
+      "n": 6
+    },
+    "logistic_regression": {
+      "f1": 0.5714285714285714,
+      "n": 6
+    },
+    "random_forest": {
+      "f1": 0.75,
+      "n": 6
+    },
+    "dummy": {
+      "f1": 0.5,
+      "n": 6
+    }
+  },
+  "units": {
+    "depth": "injected depth (ppm)",
+    "fraction": "recovery fraction",
+    "timing": "absolute timing error (days)",
+    "snr": "matched-filter S/N"
+  }
+}

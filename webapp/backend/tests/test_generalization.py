@@ -116,8 +116,8 @@ def test_window_geometry_matches_pre_registered_rules(manifests, times_by_quarte
 def test_window_generation_is_gap_aware_on_a_synthetic_curve():
     times = np.concatenate(
         [
-            np.arange(0.0, 8.0, 29.4 / 1440.0),      # piece A, 8 d -> one 5 d window
-            np.arange(12.0, 20.0, 29.4 / 1440.0),    # piece B after a 4 d gap -> one 5 d window
+            np.arange(0.0, 8.0, 29.4 / 1440.0),  # piece A, 8 d -> one 5 d window
+            np.arange(12.0, 20.0, 29.4 / 1440.0),  # piece B after a 4 d gap -> one 5 d window
         ]
     )
     windows = gen.generate_windows(times, "Q02", 5.0)
@@ -131,7 +131,7 @@ def test_window_generation_is_gap_aware_on_a_synthetic_curve():
 
 
 def test_short_tail_is_dropped_but_a_long_enough_tail_is_kept():
-    short_tail = np.arange(0.0, 4.9, 29.4 / 1440.0)   # 4.9 d: < 5 d, kept as a tail window
+    short_tail = np.arange(0.0, 4.9, 29.4 / 1440.0)  # 4.9 d: < 5 d, kept as a tail window
     assert len(gen.generate_windows(short_tail, "Q02", 5.0)) == 1
     three_days = np.arange(0.0, 3.9, 29.4 / 1440.0)  # 3.9 d: below 0.8 * 5 d -> dropped
     assert gen.generate_windows(three_days, "Q02", 5.0) == []
@@ -181,8 +181,7 @@ def test_odd_tail_uses_its_own_coin():
 
 def test_roles_do_not_depend_on_flux_values(manifests, monkeypatch):
     baseline = {
-        (w["quarter"], w["window_index"]): w["role"]
-        for w in _windows(manifests, "primary")
+        (w["quarter"], w["window_index"]): w["role"] for w in _windows(manifests, "primary")
     }
     original = gen.load_quarter
 
@@ -193,25 +192,18 @@ def test_roles_do_not_depend_on_flux_values(manifests, monkeypatch):
     monkeypatch.setattr(gen, "load_quarter", scaled_loader)
     altered = gen.build_manifests()
     monkeypatch.undo()
-    scaled = {
-        (w["quarter"], w["window_index"]): w["role"]
-        for w in _windows(altered, "primary")
-    }
+    scaled = {(w["quarter"], w["window_index"]): w["role"] for w in _windows(altered, "primary")}
     assert scaled == baseline
 
 
 def test_roles_do_not_depend_on_the_offset_seed(manifests, monkeypatch):
     baseline = {
-        (w["quarter"], w["window_index"]): w["role"]
-        for w in _windows(manifests, "primary")
+        (w["quarter"], w["window_index"]): w["role"] for w in _windows(manifests, "primary")
     }
     monkeypatch.setattr(gen, "OFFSET_SEED", gen.OFFSET_SEED + 7)
     altered = gen.build_manifests()
     monkeypatch.undo()
-    moved = {
-        (w["quarter"], w["window_index"]): w["role"]
-        for w in _windows(altered, "primary")
-    }
+    moved = {(w["quarter"], w["window_index"]): w["role"] for w in _windows(altered, "primary")}
     assert moved == baseline
 
 
@@ -230,8 +222,8 @@ def test_temporal_role_balance_is_not_systematic(manifests, times_by_quarter):
             for window in windows:
                 seg_lo, seg_hi = gen.contiguous_pieces(times)[window["piece_index"]]
                 piece = times[seg_lo:seg_hi]
-                relative[window["window_index"]] = (
-                    (window["time_start"] - piece[0]) / (piece[-1] - piece[0])
+                relative[window["window_index"]] = (window["time_start"] - piece[0]) / (
+                    piece[-1] - piece[0]
                 )
                 pooled[window["role"]].append(relative[window["window_index"]])
             inj = [relative[w["window_index"]] for w in windows if w["role"] == "injection"]
@@ -247,7 +239,6 @@ def test_temporal_role_balance_is_not_systematic(manifests, times_by_quarter):
         untied = len(per_quarter) - tied
         p_value = stats.binomtest(earlier, untied, 0.5).pvalue if untied else 1.0
         assert p_value > 0.10, f"{label}: systematic role/time association (p={p_value:.3f})"
-
 
 
 def test_injection_and_null_windows_never_share_cadences(manifests):
@@ -292,9 +283,7 @@ def test_null_library_counts_match_the_window_manifests(manifests):
         injections = [w for w in windows if w["role"] == "injection"]
         entry = library[label]
         assert entry["calibration"]["null_windows"] + entry["test"]["null_windows"] == len(nulls)
-        assert entry["test"]["null_windows"] == sum(
-            1 for w in nulls if w["split"] == "test"
-        )
+        assert entry["test"]["null_windows"] == sum(1 for w in nulls if w["split"] == "test")
         assert entry["paired_controls"]["windows"] == len(injections)
         assert entry["target_fpr"] == pytest.approx(0.05)
         assert "threshold calibration" in entry["paired_controls"]["excluded_from"]
@@ -366,13 +355,12 @@ def test_feasibility_passes_for_both_window_lengths(manifests):
     for label in ("primary", "sensitivity"):
         assert report[label]["pass"] is True, report[label]
         for split, row in report[label]["splits"].items():
-            assert row["injection_windows"] >= gen.FEASIBILITY_MINIMUMS[
-                "injection_windows"
-            ][split]
+            assert row["injection_windows"] >= gen.FEASIBILITY_MINIMUMS["injection_windows"][split]
             assert row["null_windows"] >= gen.FEASIBILITY_MINIMUMS["null_windows"][split]
-            assert row["positives_per_depth"] >= gen.FEASIBILITY_MINIMUMS[
-                "positives_per_depth_per_split"
-            ]
+            assert (
+                row["positives_per_depth"]
+                >= gen.FEASIBILITY_MINIMUMS["positives_per_depth_per_split"]
+            )
             low, high = gen.FEASIBILITY_MINIMUMS["per_depth_balance_range"]
             assert low <= row["per_depth_balance"] <= high
 

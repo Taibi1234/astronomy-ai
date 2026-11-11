@@ -71,9 +71,7 @@ EXPECTED_SCHEMA_VERSION = 1
 def _safe_model_filename(name: object) -> str:
     """Fitted state may only reference the single safe model filename."""
     if not isinstance(name, str) or name != SAFE_MODEL_FILENAME:
-        raise GateError(
-            f"fitted state must reference {SAFE_MODEL_FILENAME!r}, got {name!r}"
-        )
+        raise GateError(f"fitted state must reference {SAFE_MODEL_FILENAME!r}, got {name!r}")
     path = Path(name)
     if path.is_absolute() or path.name != name or ".." in path.parts:
         raise GateError(f"unsafe model filename: {name!r}")
@@ -87,9 +85,7 @@ def validate_quarter(quarter: object) -> str:
     return quarter
 
 
-def require_noise_strata(
-    present, expected, *, context: str, allow_extra: bool = False
-) -> None:
+def require_noise_strata(present, expected, *, context: str, allow_extra: bool = False) -> None:
     """Refuse calibration/reporting when a declared noise stratum is absent."""
     present_set = {str(value) for value in present}
     expected_set = {str(value) for value in expected}
@@ -100,14 +96,14 @@ def require_noise_strata(
     if extra and not allow_extra:
         raise GateError(f"{context}: unexpected noise strata {extra}")
 
+
 # Detector operating-point reporting. Protocol v1 fixes the threshold rule but does
 # not yet record these reporting fields; see reports/phase11b_implementation.md §6.
 DETECTOR_REPORT_SPEC = {
     "score": "snr",
     "detected": "snr > threshold[noise_condition]",
     "recovered": (
-        "injected and detected and |delta_est_days - delta_true_days| <= "
-        "timing_tolerance_days"
+        "injected and detected and |delta_est_days - delta_true_days| <= timing_tolerance_days"
     ),
     "timing_tolerance_days": TIMING_TOLERANCE_DAYS,
     "strata": ["noise_condition"],
@@ -459,9 +455,12 @@ def plan_trials(windows: list[dict], protocol: dict, split_group: str) -> pd.Dat
         # "null" is a pandas default NA token, so the trial-level vocabulary uses
         # "null_window"; the manifest keeps "null" because it is frozen.
         role = "null_window" if window["role"] == "null" else "injection"
-        conditions = [(0.0, False)] if role == "null_window" else [
-            (depth, True) for depth in gen.INJECTION_DEPTHS_PPM
-        ] + [(gen.CONTROL_DEPTH_PPM, False)]
+        conditions = (
+            [(0.0, False)]
+            if role == "null_window"
+            else [(depth, True) for depth in gen.INJECTION_DEPTHS_PPM]
+            + [(gen.CONTROL_DEPTH_PPM, False)]
+        )
         for depth, injected in conditions:
             for offset_index in range(gen.OFFSET_DRAWS):
                 for noise in gen.NOISE_CONDITIONS:
@@ -557,9 +556,7 @@ def choose_threshold(
     }
 
 
-def calibrate_detector_thresholds(
-    trials: pd.DataFrame, protocol: dict
-) -> dict[str, dict]:
+def calibrate_detector_thresholds(trials: pd.DataFrame, protocol: dict) -> dict[str, dict]:
     """Detector thresholds from train+val nulls, per noise condition."""
     frame = trials[trials["role"] == "null_window"]
     if (frame["split"] == "test").any():
@@ -815,22 +812,18 @@ def cluster_bootstrap_ci(
     used = "percentile"
 
     jack = np.array(
-        [np.mean(np.concatenate([g for j, g in enumerate(groups) if j != i]))
-         for i in range(count)]
+        [np.mean(np.concatenate([g for j, g in enumerate(groups) if j != i])) for i in range(count)]
     )
     jack_mean = jack.mean()
     denominator = np.sum((jack_mean - jack) ** 2)
     if method == "bca" and denominator > 0 and np.std(boot) > 0:
         prop = np.clip(np.mean(boot < point), 1.0 / resamples, 1 - 1.0 / resamples)
         z0 = norm.ppf(prop)
-        acceleration = np.sum((jack_mean - jack) ** 3) / (6 * denominator ** 1.5)
+        acceleration = np.sum((jack_mean - jack) ** 3) / (6 * denominator**1.5)
         z_alpha = norm.ppf(alpha / 2)
         z_one_minus = norm.ppf(1 - alpha / 2)
         adjusted = [
-            norm.cdf(
-                z0 + (z0 + z) / (1 - acceleration * (z0 + z))
-            )
-            for z in (z_alpha, z_one_minus)
+            norm.cdf(z0 + (z0 + z) / (1 - acceleration * (z0 + z))) for z in (z_alpha, z_one_minus)
         ]
         lo, hi = np.percentile(boot, np.array(adjusted) * 100, method="linear")
         used = "bca"
@@ -900,8 +893,8 @@ def physics_operating_point(
         frame["delta_est_days"].astype(float) - frame["delta_true_days"].astype(float)
     ).abs()
     injected = frame["injected"].astype(bool)
-    frame["recovered"] = injected & frame["detected"] & (
-        frame["timing_error_days"] <= tolerance_days
+    frame["recovered"] = (
+        injected & frame["detected"] & (frame["timing_error_days"] <= tolerance_days)
     )
     frame["false_positive"] = (~injected) & frame["detected"]
 
@@ -911,12 +904,10 @@ def physics_operating_point(
         fp = int(nulls["false_positive"].sum())
         recovered = int(positives["recovered"].sum())
         fpr_clusters = [
-            group["false_positive"].to_numpy(dtype=float)
-            for _, group in nulls.groupby("quarter")
+            group["false_positive"].to_numpy(dtype=float) for _, group in nulls.groupby("quarter")
         ]
         recall_clusters = [
-            group["recovered"].to_numpy(dtype=float)
-            for _, group in positives.groupby("quarter")
+            group["recovered"].to_numpy(dtype=float) for _, group in positives.groupby("quarter")
         ]
         by_depth = []
         for depth, group in positives.groupby("requested_depth_ppm"):
@@ -926,9 +917,7 @@ def physics_operating_point(
                     "trials": int(len(group)),
                     "recovered": int(group["recovered"].sum()),
                     "fraction": float(group["recovered"].mean()) if len(group) else None,
-                    "wilson": wilson_interval(
-                        int(group["recovered"].sum()), int(len(group))
-                    ),
+                    "wilson": wilson_interval(int(group["recovered"].sum()), int(len(group))),
                 }
             )
         return {
@@ -936,23 +925,16 @@ def physics_operating_point(
             "false_positives": fp,
             "fpr": (fp / len(nulls)) if len(nulls) else None,
             "fpr_wilson": wilson_interval(fp, int(len(nulls))),
-            "fpr_cluster": cluster_bootstrap_ci(
-                fpr_clusters, resamples=resamples, seed=seed
-            ),
+            "fpr_cluster": cluster_bootstrap_ci(fpr_clusters, resamples=resamples, seed=seed),
             "injected_trials": int(len(positives)),
             "recovered": recovered,
             "recall": (recovered / len(positives)) if len(positives) else None,
             "recall_wilson": wilson_interval(recovered, int(len(positives))),
-            "recall_cluster": cluster_bootstrap_ci(
-                recall_clusters, resamples=resamples, seed=seed
-            ),
+            "recall_cluster": cluster_bootstrap_ci(recall_clusters, resamples=resamples, seed=seed),
             "by_depth": sorted(by_depth, key=lambda item: item["requested_depth_ppm"]),
         }
 
-    by_noise = {
-        str(noise): block(group)
-        for noise, group in frame.groupby("noise_condition")
-    }
+    by_noise = {str(noise): block(group) for noise, group in frame.groupby("noise_condition")}
     return {
         "spec": DETECTOR_REPORT_SPEC,
         "split": split,
@@ -987,8 +969,7 @@ def evaluate_test(
     fitted = load_fitted(out_dir, protocol_hash)
     if fitted.get("schema_version") == 2:
         raise GateError(
-            "a protocol v2 fitted state must be evaluated by the v2 evaluator, not this "
-            "legacy path"
+            "a protocol v2 fitted state must be evaluated by the v2 evaluator, not this legacy path"
         )
 
     # Exclusive, cross-process claim. It is acquired before any test row is touched and is
@@ -1009,9 +990,7 @@ def evaluate_test(
     if set(trials["split"].unique()) - {"test"}:
         raise GateError("evaluate_test accepts test rows only")
 
-    model = pickle.loads(
-        (out_dir / _safe_model_filename(fitted["model_file"])).read_bytes()
-    )
+    model = pickle.loads((out_dir / _safe_model_filename(fitted["model_file"])).read_bytes())
     features = fitted["features"]
     matrix = np.where(
         np.isfinite(test[features].to_numpy(dtype=float)),
@@ -1176,9 +1155,7 @@ def describe_mode(mode: str, manifest_dir: Path) -> dict:
     if mode not in MODES:
         raise ValueError(f"unknown mode: {mode}")
     spec = MODES[mode]
-    name = (
-        "windows_primary.json" if spec["window_days"] == 5.0 else "windows_sensitivity.json"
-    )
+    name = "windows_primary.json" if spec["window_days"] == 5.0 else "windows_sensitivity.json"
     windows = json.loads((manifest_dir / name).read_text(encoding="utf-8"))["windows"]
     if spec["quarters"]:
         allowed = set(spec["quarters"])
@@ -1207,8 +1184,10 @@ def main() -> None:  # pragma: no cover - CLI glue
     parser.add_argument("--manifest-dir", default=None)
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
-    manifest_dir = Path(args.manifest_dir) if args.manifest_dir else (
-        gen.project_root() / "reports" / "phase11_generalization"
+    manifest_dir = (
+        Path(args.manifest_dir)
+        if args.manifest_dir
+        else (gen.project_root() / "reports" / "phase11_generalization")
     )
     if args.describe_mode:
         print(json.dumps(describe_mode(args.describe_mode, manifest_dir), indent=2))

@@ -207,9 +207,9 @@ Option 2 has not been applied — it changes repository content beyond documenta
 | Script | Symptom | Status after Phase 7 |
 |---|---|---|
 | `scripts/phase5_build_dataset.py` | `IndentationError` at line 51 (fixed in Phase 7); features computed pre-injection (fixed in Phase 8) | **Corrected.** Dedented in Phase 7; feature source switched to the presented flux in Phase 8. It now reproduces `reports/phase5_dataset.json` byte-for-byte and is guarded by `test_saved_dataset_matches_repaired_builder`. |
-| `scripts/statistical_validation.py` | `NameError` for `moving_block_resid`, `stratified_block_resid` (never defined) | **Unchanged.** Incomplete proto-Phase-4 prototype superseded by `phase4_*.py`; no outputs exist anywhere, so nothing depends on it. |
-| `scripts/injection_recovery.py` | Reads `reports/results/phase4_statistical_validation.json`, which does not exist | Unchanged; superseded by `phase4_injection_recovery.py`; kept for provenance |
-| `scripts/transit_control_test.py` | Parses `sys.argv` at import; breaks root-level pytest collection | Unchanged; harmless when pytest is scoped to `tests` |
+| `scripts/statistical_validation.py` | `NameError` for `moving_block_resid`, `stratified_block_resid` (never defined) | **Stubs added.** The two never-implemented helpers now raise `NotImplementedError` with a pointer to `scripts/phase4_block_bootstrap.py`, so running the script fails fast with an explanation instead of a mid-run `NameError`. The script remains a superseded proto-Phase-4 prototype; no outputs exist anywhere, so nothing depends on it. |
+| `scripts/injection_recovery.py` | Reads `reports/results/phase4_statistical_validation.json`, which does not exist | Unchanged; the missing file triggers a printed warning and a fixed 15 ppm half-window fallback, not a crash. Superseded by `phase4_injection_recovery.py`; kept for provenance |
+| `scripts/transit_control_test.py` | Parses `sys.argv` at import; breaks root-level pytest collection | **Resolved.** `pyproject.toml` now sets `testpaths = ["tests"]`, so a bare `pytest` run only collects the real test suite |
 
 None of these affect the committed Phase 3/4 results. Full detail in
 `reports/phase7_reliability_audit.md`.
@@ -231,9 +231,10 @@ All checks passed!
 
 The 75 findings that existed at the end of the publication audit were fixed: 16 safe autofixes (import
 splitting, sorting, removal of genuinely unused imports, one `len()` truthiness), 41 long lines wrapped by
-splitting string literals into adjacent literals, 13 `# noqa: E402` where imports must follow `sys.path`
-setup, and 4 `# noqa: F821` on the calls to the never-defined helpers in `statistical_validation.py`
-(inventing those helpers would be a new statistical implementation, not a lint fix).
+splitting string literals into adjacent literals, and 13 `# noqa: E402` where imports must follow `sys.path`
+setup. The 4 `# noqa: F821` suppressions for the never-defined helpers in `statistical_validation.py` were
+later removed when those helpers became explicit `NotImplementedError` stubs (see §6) — inventing their
+statistics would be a new implementation, not a lint fix.
 
 Every string value, and therefore every written artifact, was verified unchanged: `ast.dump` of each
 edited module is identical to its pre-fix form apart from the removed unused imports, and re-running all

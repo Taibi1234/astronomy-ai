@@ -1,4 +1,3 @@
-
 """Phase 8 — corrected synthetic dataset builder (WINDOW-LEVEL INPUT SEMANTICS).
 
 Features are calculated from the flux presented to the classifier:
@@ -74,11 +73,7 @@ def extract_features(flux, phase, time):
 
     contrast = (
         float(
-            (
-                np.mean(flux[np.abs(phase) > 3 / 24])
-                - np.mean(flux[np.abs(phase) <= 1.8 / 24])
-            )
-            * 1e6
+            (np.mean(flux[np.abs(phase) > 3 / 24]) - np.mean(flux[np.abs(phase) <= 1.8 / 24])) * 1e6
         )
         if has_out and has_in
         else 0.0
@@ -97,9 +92,7 @@ def extract_features(flux, phase, time):
         "depth_rel_ppm": float((np.median(flux) - np.min(flux)) * 1e6),
         "contrast_ppm": contrast,
         "mad_scatter": float(np.median(np.abs(flux - np.median(flux)))),
-        "gap_fraction": float(
-            np.sum(np.diff(time) > 0.05) / max(1, len(time) - 1)
-        ),
+        "gap_fraction": float(np.sum(np.diff(time) > 0.05) / max(1, len(time) - 1)),
         "matched_filter_corr": corr,
         "segment_std_ppm": float(np.std(flux) * 1e6),
         "mean_flux": float(np.mean(flux)),
@@ -109,9 +102,7 @@ def extract_features(flux, phase, time):
 def inject_transit(flux, phase, depth_ppm):
     """Add a batman transit of the given depth, preserving mean level."""
     rp = np.sqrt(depth_ppm * 1e-6)
-    signal_model = batman_curve(
-        phase, rp, 0.0, A_OVER_RSTAR, INCLINATION_DEG
-    )
+    signal_model = batman_curve(phase, rp, 0.0, A_OVER_RSTAR, INCLINATION_DEG)
     median_w = float(np.median(flux))
     return flux + median_w * (signal_model - 1.0)
 
@@ -123,9 +114,7 @@ def build(out_dir):
         "variants": [],
     }
     time_all, flux_all = load_dataset(spec)
-    phase_all = fold_phase(
-        time_all, PERIOD, TRANSIT_EPOCH_BJD, BJDREF["kepler"]
-    )
+    phase_all = fold_phase(time_all, PERIOD, TRANSIT_EPOCH_BJD, BJDREF["kepler"])
     flux_dt, _ = detrend_poly(time_all, phase_all, flux_all)
 
     segments_idx = np.split(
@@ -143,9 +132,7 @@ def build(out_dir):
         is_positive = seg_idx % 2 == 0
         center_idx_in_seg = rng.integers(0, max(1, len(seg) - 50))
         center_time = time_all[seg[center_idx_in_seg]]
-        window_points_idx = seg[
-            np.abs(time_all[seg] - center_time) <= (WINDOW_HOURS / 24)
-        ]
+        window_points_idx = seg[np.abs(time_all[seg] - center_time) <= (WINDOW_HOURS / 24)]
 
         if len(window_points_idx) < 10:
             continue
@@ -156,9 +143,7 @@ def build(out_dir):
 
         if is_positive:
             depth_ppm = float(rng.choice(POSITIVE_DEPTHS_PPM))
-            presented_flux = inject_transit(
-                win_flux_dt, win_phase, depth_ppm
-            )
+            presented_flux = inject_transit(win_flux_dt, win_phase, depth_ppm)
         else:
             depth_ppm = float(NEGATIVE_DEPTH_PPM)
             presented_flux = win_flux_dt.copy()
@@ -177,9 +162,7 @@ def build(out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "generated_by": "scripts/phase8_build_dataset.py",
-        "feature_source": (
-            "presented window flux (transit injected when label=1)"
-        ),
+        "feature_source": ("presented window flux (transit injected when label=1)"),
         "seed": SEED,
         "window_hours": WINDOW_HOURS,
         "geometry": {
@@ -203,10 +186,7 @@ def build(out_dir):
     n_positive = sum(w["label"] for w in windows)
     n_negative = sum(1 for w in windows if w["label"] == 0)
 
-    print(
-        f"Phase 8 dataset: {len(windows)} windows "
-        f"({n_positive} positive, {n_negative} negative)"
-    )
+    print(f"Phase 8 dataset: {len(windows)} windows ({n_positive} positive, {n_negative} negative)")
     print(f"Output: {output_path}")
     return payload
 

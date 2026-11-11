@@ -10,6 +10,7 @@ from __future__ import annotations
 import inspect
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,18 @@ def quarters(effective) -> tuple[set[str], set[str]]:
     return b7.protocol_fit_quarters(MANIFEST_DIR, effective)
 
 
+def _iso(hours: float) -> str:
+    return (datetime.now(UTC) + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
+
+
+@pytest.fixture(autouse=True)
+def _approved_authorization_dir(monkeypatch, tmp_path) -> Path:
+    path = tmp_path / authz.AUTHORIZATION_DIRNAME
+    path.mkdir(exist_ok=True)
+    monkeypatch.setattr(authz, "approved_authorization_dir", lambda root: path)
+    return path
+
+
 def _write_doc(
     tmp_path: Path,
     *,
@@ -80,7 +93,8 @@ def _write_doc(
         "campaign_id": campaign_id,
         "approver": "test-owner",
         "operator": "test-operator",
-        "issued_at": "2026-10-22T00:00:00Z",
+        "issued_at": _iso(-1),
+        "expires_at": _iso(23),
         "scope": scope,
         "authorized_quarters": sorted(fit),
         "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
@@ -90,7 +104,8 @@ def _write_doc(
     if scope == "fit_and_evaluate":
         doc["authorized_test_quarters"] = sorted(test)
     doc.update(overrides or {})
-    path = tmp_path / "authorization.json"
+    path = tmp_path / authz.AUTHORIZATION_DIRNAME / "authorization.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
     return authz.AuthorizationRef(path=path, sha256=v2.sha256_file(path), campaign_id=campaign_id)
 
@@ -131,7 +146,7 @@ def _fit(effective, tmp_path, provenance, authorization, frame, monkeypatch, **o
     arguments = {
         "effective": effective,
         "manifest_dir": MANIFEST_DIR,
-        "repo_root": REPO_ROOT,
+        "repo_root": tmp_path,
         "out_dir": tmp_path / "fit",
         "authorization": authorization,
         "model_id": "L7_detector_plus_clean_flux",
@@ -157,7 +172,7 @@ def test_plain_dictionary_is_refused(effective, tmp_path):
         b7.fit_real(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=tmp_path,
             out_dir=tmp_path / "x",
             authorization={"campaign_id": "plain"},
         )
@@ -339,7 +354,7 @@ def test_fit_real_refuses_a_dirty_tree(
 
 
 def test_fit_real_refuses_a_protected_output(
-    effective, provenance, authorization, real_fit_frame, monkeypatch
+    effective, tmp_path, provenance, authorization, real_fit_frame, monkeypatch
 ):
     monkeypatch.setattr(phase11, "fit_models", lambda *args, **kwargs: None)
 
@@ -347,7 +362,7 @@ def test_fit_real_refuses_a_protected_output(
         b7.fit_real(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=tmp_path,
             out_dir=MANIFEST_DIR,
             authorization=authorization,
             model_id="L7_detector_plus_clean_flux",
@@ -565,7 +580,7 @@ def test_dirty_captured_provenance_is_refused(
         b7.fit_real(
             effective=effective,
             manifest_dir=MANIFEST_DIR,
-            repo_root=REPO_ROOT,
+            repo_root=tmp_path,
             out_dir=tmp_path / "fit",
             authorization=authorization,
             model_id="L7_detector_plus_clean_flux",

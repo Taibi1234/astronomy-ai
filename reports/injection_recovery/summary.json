@@ -1,0 +1,413 @@
+{
+  "experiment": "phase10-injection-recovery",
+  "version": "1.0.0",
+  "mode": "full",
+  "status": "completed",
+  "started_at": "2026-10-22T00:19:21+00:00",
+  "finished_at": "2026-10-22T00:19:29+00:00",
+  "runtime_seconds": 8.35,
+  "config": {
+    "label": "full",
+    "datasets": [
+      "kepler",
+      "tess"
+    ],
+    "chunks": {
+      "kepler": 3,
+      "tess": 4
+    },
+    "depths_ppm": [
+      0,
+      75,
+      150,
+      225,
+      300
+    ],
+    "noise_conditions": [
+      "observed",
+      "amplified_x2"
+    ],
+    "offset_draws": 2,
+    "seed": 20261022,
+    "tolerance_days": 0.0377,
+    "search_half_days": 0.2,
+    "search_step_days": 0.0025,
+    "features": [
+      "min_depth_ppm",
+      "std_ppm",
+      "mad_ppm",
+      "gap_fraction",
+      "mean_flux",
+      "n_points"
+    ]
+  },
+  "counts": {
+    "trials_total": 140,
+    "trials_valid": 140,
+    "trials_invalid": 0,
+    "controls_evaluated_for_fpr": 8,
+    "chunks": {
+      "kepler": 3,
+      "tess": 4
+    },
+    "splits": {
+      "kepler": {
+        "chunks": {
+          "train": 1,
+          "val": 1,
+          "test": 1
+        }
+      },
+      "tess": {
+        "chunks": {
+          "train": 2,
+          "val": 1,
+          "test": 1
+        }
+      }
+    }
+  },
+  "excluded_trials": [],
+  "thresholds": {
+    "kepler|amplified_x2": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 4
+    },
+    "kepler|observed": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 4
+    },
+    "tess|amplified_x2": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 6
+    },
+    "tess|observed": {
+      "threshold_snr": 3.0,
+      "source": "max(3 sigma, 95th percentile of non-test controls)",
+      "n_calibration_controls": 6
+    }
+  },
+  "recovery_by_depth_all_splits": [
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered": 4,
+      "trials": 28,
+      "fraction": 0.14285714285714285,
+      "wilson_low": 0.056989129307017855,
+      "wilson_high": 0.31490173044877334,
+      "median_recovered_depth_ppm": 134.9725694703414,
+      "median_timing_error_days": 0.10124821046380111
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 9,
+      "trials": 28,
+      "fraction": 0.32142857142857145,
+      "wilson_low": 0.1793304754342074,
+      "wilson_high": 0.5066149544436882,
+      "median_recovered_depth_ppm": 201.627700346414,
+      "median_timing_error_days": 0.009416418519520658
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered": 14,
+      "trials": 28,
+      "fraction": 0.5,
+      "wilson_low": 0.3263284683244634,
+      "wilson_high": 0.6736715316755366,
+      "median_recovered_depth_ppm": 286.54147570224757,
+      "median_timing_error_days": 0.005718876686283892
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 18,
+      "trials": 28,
+      "fraction": 0.6428571428571429,
+      "wilson_low": 0.4582997758222723,
+      "wilson_high": 0.7929438802754113,
+      "median_recovered_depth_ppm": 360.04058338944577,
+      "median_timing_error_days": 0.003503685017455682
+    }
+  ],
+  "recovery_by_depth_test_split": [
+    {
+      "requested_depth_ppm": 75.0,
+      "recovered": 0,
+      "trials": 8,
+      "fraction": 0.0,
+      "wilson_low": 0.0,
+      "wilson_high": 0.3244156195108769,
+      "median_recovered_depth_ppm": null,
+      "median_timing_error_days": 0.006819241577850882
+    },
+    {
+      "requested_depth_ppm": 150.0,
+      "recovered": 2,
+      "trials": 8,
+      "fraction": 0.25,
+      "wilson_low": 0.07147768885802763,
+      "wilson_high": 0.5907301208974108,
+      "median_recovered_depth_ppm": 194.24553157963868,
+      "median_timing_error_days": 0.006819241577850882
+    },
+    {
+      "requested_depth_ppm": 225.0,
+      "recovered": 5,
+      "trials": 8,
+      "fraction": 0.625,
+      "wilson_low": 0.30573785458380187,
+      "wilson_high": 0.863158240538479,
+      "median_recovered_depth_ppm": 286.015684346251,
+      "median_timing_error_days": 0.0038250346680398645
+    },
+    {
+      "requested_depth_ppm": 300.0,
+      "recovered": 6,
+      "trials": 8,
+      "fraction": 0.75,
+      "wilson_low": 0.40926987910258916,
+      "wilson_high": 0.9285223111419724,
+      "median_recovered_depth_ppm": 365.24971998690444,
+      "median_timing_error_days": 0.0017220646361811032
+    }
+  ],
+  "recovery_by_dataset_and_noise": [
+    {
+      "dataset": "kepler",
+      "noise_condition": "amplified_x2",
+      "recovered": 15,
+      "trials": 24,
+      "fraction": 0.625,
+      "wilson_low": 0.42709619037907065,
+      "wilson_high": 0.7884086656636855
+    },
+    {
+      "dataset": "kepler",
+      "noise_condition": "observed",
+      "recovered": 21,
+      "trials": 24,
+      "fraction": 0.875,
+      "wilson_low": 0.6899571185214243,
+      "wilson_high": 0.9565574496068442
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "amplified_x2",
+      "recovered": 0,
+      "trials": 32,
+      "fraction": 0.0,
+      "wilson_low": 0.0,
+      "wilson_high": 0.1071827150573635
+    },
+    {
+      "dataset": "tess",
+      "noise_condition": "observed",
+      "recovered": 9,
+      "trials": 32,
+      "fraction": 0.28125,
+      "wilson_low": 0.15564406845647866,
+      "wilson_high": 0.4537483693811179
+    }
+  ],
+  "false_positive_rate": {
+    "controls": 8,
+    "false_positives": 0,
+    "rate": 0.0,
+    "wilson_low": 0.0,
+    "wilson_high": 0.3244156195108769,
+    "definition": "zero-depth trials in test-split chunks (never used for calibration)"
+  },
+  "benchmark": {
+    "features": [
+      "min_depth_ppm",
+      "std_ppm",
+      "mad_ppm",
+      "gap_fraction",
+      "mean_flux",
+      "n_points"
+    ],
+    "splits": {
+      "train": {
+        "windows": 60,
+        "groups": 3,
+        "positive": 48,
+        "negative": 12
+      },
+      "val": {
+        "windows": 40,
+        "groups": 2,
+        "positive": 32,
+        "negative": 8
+      },
+      "test": {
+        "windows": 40,
+        "groups": 2,
+        "positive": 32,
+        "negative": 8
+      }
+    },
+    "methods": {
+      "physics_matched_filter": {
+        "n": 40,
+        "positive": 32,
+        "negative": 8,
+        "prevalence": 0.8,
+        "f1_no_skill_predict_all_positive": 0.888888888888889,
+        "precision": 1.0,
+        "recall": 0.40625,
+        "f1": 0.5777777777777777,
+        "roc_auc": 0.84375,
+        "pr_auc": 0.9599825649275507,
+        "confusion_matrix": [
+          [
+            8,
+            0
+          ],
+          [
+            19,
+            13
+          ]
+        ]
+      },
+      "logistic_regression": {
+        "n": 40,
+        "positive": 32,
+        "negative": 8,
+        "prevalence": 0.8,
+        "f1_no_skill_predict_all_positive": 0.888888888888889,
+        "precision": 0.8,
+        "recall": 1.0,
+        "f1": 0.8888888888888888,
+        "roc_auc": 0.6796875,
+        "pr_auc": 0.9097388862855899,
+        "confusion_matrix": [
+          [
+            0,
+            8
+          ],
+          [
+            0,
+            32
+          ]
+        ],
+        "brier": 0.18306279103545192
+      },
+      "random_forest": {
+        "n": 40,
+        "positive": 32,
+        "negative": 8,
+        "prevalence": 0.8,
+        "f1_no_skill_predict_all_positive": 0.888888888888889,
+        "precision": 0.8,
+        "recall": 1.0,
+        "f1": 0.8888888888888888,
+        "roc_auc": 0.5546875,
+        "pr_auc": 0.8261446886446888,
+        "confusion_matrix": [
+          [
+            0,
+            8
+          ],
+          [
+            0,
+            32
+          ]
+        ],
+        "selected": true,
+        "validation_f1": 0.7936507936507936,
+        "baseline_validation_f1": 0.6666666666666666
+      },
+      "dummy": {
+        "n": 40,
+        "positive": 32,
+        "negative": 8,
+        "prevalence": 0.8,
+        "f1_no_skill_predict_all_positive": 0.888888888888889,
+        "precision": 0.7878787878787878,
+        "recall": 0.8125,
+        "f1": 0.8,
+        "roc_auc": 0.46875,
+        "pr_auc": 0.7901515151515152,
+        "confusion_matrix": [
+          [
+            1,
+            7
+          ],
+          [
+            6,
+            26
+          ]
+        ]
+      }
+    },
+    "notes": [
+      "All methods are evaluated on the same test chunks and labels.",
+      "The physics detector's threshold is calibrated on train-split controls only.",
+      "ML preprocessing (scaling, imputation) is fitted on train rows only."
+    ],
+    "logistic_threshold": {
+      "value": 0.8795323477095031,
+      "selected_on": "validation only"
+    },
+    "per_depth_test": [
+      {
+        "requested_depth_ppm": 75.0,
+        "trials": 8,
+        "physics_recovered": 0,
+        "logistic_detected": 8
+      },
+      {
+        "requested_depth_ppm": 150.0,
+        "trials": 8,
+        "physics_recovered": 2,
+        "logistic_detected": 8
+      },
+      {
+        "requested_depth_ppm": 225.0,
+        "trials": 8,
+        "physics_recovered": 5,
+        "logistic_detected": 8
+      },
+      {
+        "requested_depth_ppm": 300.0,
+        "trials": 8,
+        "physics_recovered": 6,
+        "logistic_detected": 8
+      }
+    ],
+    "status": "ok"
+  },
+  "limitations": [
+    "Independent units are contiguous chunks (3-4 per dataset), not individual cadences.",
+    "Injections are coherent across each chunk's transits, at a hidden phase offset from the published ephemeris.",
+    "Synthetic injection recovery does not establish real-planet detection performance.",
+    "The ML benchmark uses six time-domain features and very few independent groups; treat it as exploratory."
+  ],
+  "provenance": {
+    "source_hashes": {
+      "kepler": "7dd1cb33d3dea7109db42c0277cae8f4bd3dfd1f9cf9d44e4b4c613521657854",
+      "tess": "ac582c1cf89996ff54d3d9f9035512f8ae6adb582a8ed5feeb5517cd13838f1f"
+    },
+    "seed": 20261022,
+    "python": "3.14.3",
+    "platform": "Windows-11-10.0.22621-SP0",
+    "packages": {
+      "numpy": "2.5.4",
+      "pandas": "3.0.6",
+      "scikit-learn": "1.9.1",
+      "batman": "2.5.1"
+    },
+    "git_commit": "5ef9df6",
+    "command": "python -m research.run_experiment --mode full"
+  },
+  "artifacts": {
+    "trial_results": "trial_results.csv",
+    "summary": "summary.json",
+    "config": "config.json",
+    "plot_data": "plot_data.json",
+    "report": "recovery_report.md"
+  }
+}

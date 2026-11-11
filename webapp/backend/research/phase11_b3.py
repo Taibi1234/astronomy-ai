@@ -53,6 +53,8 @@ MODE_SYNTHETIC = b1.MODE_SYNTHETIC
 EVALUATOR_NAME = "phase11-v2-b3"
 TEST_SPLIT = "test"
 METRICS_FILENAME = "metrics_test.json"
+FAILURE_FILENAME = "evaluation_failure.json"
+FAILED_METRICS_FILENAME = "metrics_test.failed.json"
 REFUSAL_DIRNAME = "phase11_refusals"
 TIMING_TOLERANCE_DAYS = phase11.TIMING_TOLERANCE_DAYS
 MIN_TEST_CLUSTERS = 3
@@ -418,6 +420,7 @@ def _comparison(
 def _authorized_campaign(
     effective: Mapping,
     manifest_dir: Path,
+    repo_root: Path,
     real_authorization: authz.AuthorizationRef | None,
 ) -> dict | None:
     """Verify the OD-2 document for a real artifact; synthetic artifacts need none."""
@@ -428,6 +431,7 @@ def _authorized_campaign(
         real_authorization,
         protocol_sha256=v2.AUTHORIZED_PROTOCOL_SHA256,
         manifest_hashes=v2.validate_manifests(Path(manifest_dir), dict(effective)),
+        location=authz.DocumentLocation(manifest_dir=Path(manifest_dir), repo_root=Path(repo_root)),
         fit_quarters=fit_quarters,
         test_quarters=test_quarters,
         required_scope="campaign",
@@ -441,8 +445,10 @@ def _authorized_campaign(
 
 
 def _preclaim_generation_check(
-    campaign: Path, real_authorization: authz.AuthorizationRef | None
-) -> None:
+    campaign: Path,
+    real_authorization: authz.AuthorizationRef | None,
+    expected: Mapping | None = None,
+) -> dict:
     """Validate the generation marker before the one-shot access claim is consumed."""
     state = test_access.marker_state(campaign, test_access.MARKER_GENERATION)
     if state != "completed":
@@ -456,6 +462,169 @@ def _preclaim_generation_check(
         )
     if real_authorization is not None:
         b7g.require_generation_marker(campaign, real_authorization)
+        if expected is not None and record.get("expected_denominators") != dict(expected):
+            raise GateError(
+                "the generation marker expected_denominators do not match the evaluator "
+                "recomputation"
+            )
+    return record
+
+
+def _quarantine_metrics(campaign: Path) -> None:
+    """A failed evaluation must not leave a success-metrics file behind."""
+    metrics = Path(campaign) / METRICS_FILENAME
+    if (
+        metrics.is_file()
+        and test_access.marker_state(campaign, test_access.MARKER_ACCESS) != "completed"
+    ):
+        try:
+            metrics.replace(Path(campaign) / FAILED_METRICS_FILENAME)
+        except OSError:
+            return
+
+
+def _record_post_claim_failure(campaign: Path, exc: BaseException, marker: Mapping) -> Path | None:
+    """Durable evidence that the access claim was spent on a failed evaluation."""
+    _quarantine_metrics(campaign)
+    payload = {
+        "stage": "B3",
+        "evaluator": EVALUATOR_NAME,
+        "failure_stage": "post_claim",
+        "status": "failed_after_access_claim",
+        "terminal": True,
+        "failure_type": type(exc).__name__,
+        "message": str(exc)[:500],
+        "campaign_id": marker.get("campaign_id"),
+        "authorization_sha256": marker.get("authorization_sha256"),
+        "access_marker_state": test_access.marker_state(campaign, test_access.MARKER_ACCESS),
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "note": "the one-shot access claim is spent; a further evaluation is not possible",
+    }
+    path = Path(campaign) / FAILURE_FILENAME
+    try:
+        v2.write_json_with_sidecar(path, payload)
+    except OSError:
+        return None
+    return path
+
+
+def _run_after_claim(
+    *,
+    campaign: Path,
+    fitted: Mapping,
+    gates: Mapping,
+    real: dict | None,
+    real_authorization: authz.AuthorizationRef | None,
+    marker: Mapping,
+    resamples: int,
+) -> dict:
+    frame = load_authorized_trials(campaign)
+    checked = assert_test_trials(frame, fitted, real_authorization=real_authorization)
+    generation = runner.verify_generated_trials(campaign)
+    denominators = None
+    if checked["kind"] == "real":
+        observed = b7g.jsonable_observed(b7g.assert_denominators(frame, real["expected"]))
+        fresh = b7g.require_generation_marker(campaign, real_authorization)
+        if fresh.get("expected_denominators") != dict(real["expected"]):
+            raise GateError(
+                "the generation marker expected_denominators do not match the evaluator "
+                "recomputation on re-read"
+            )
+        recorded = fresh.get("observed_denominators")
+        if recorded is None:
+            raise GateError("the generation marker has no observed_denominators record")
+        if recorded != observed:
+            raise GateError(
+                "the generation marker observed_denominators do not match the evaluator "
+                "recomputation"
+            )
+        denominators = {"expected": real["expected"], "observed": observed}
+    l7_thresholds = gates["l7"]
+    detector_thresholds = gates["detector"]
+    degenerate = gates["degenerate"]
+    scored = _score_frame(
+        frame,
+        fitted,
+        campaign=campaign,
+        l7_thresholds=l7_thresholds,
+        detector_thresholds=detector_thresholds,
+    )
+
+    reports: dict[str, dict] = {}
+    comparisons: dict[str, dict] = {}
+    for stratum in checked["strata"]:
+        stratum_frame = scored[scored["noise_condition"].astype(str) == stratum].copy()
+        reasons = _insufficiency(stratum_frame)
+        report = _stratum_report(stratum_frame)
+        stratum_degenerate = [name for name in degenerate if name == stratum]
+        reports[stratum] = {**report, "not_evaluated": reasons}
+        comparisons[stratum] = _comparison(
+            stratum_frame, report, reasons, degenerate=stratum_degenerate, resamples=resamples
+        )
+
+    clusters = int(scored["quarter"].nunique())
+    combined = v2.combine_confirmatory(comparisons)
+    metrics = {
+        "phase": "11b",
+        "stage": "B3",
+        "schema_version": 1,
+        "evaluator": EVALUATOR_NAME,
+        "mode": MODE_SYNTHETIC,
+        "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
+        "fitted_sha256": fitted["_sha256"],
+        "trials_sha256": generation["trials_sha256"],
+        "model_id": fitted["model_id"],
+        "campaign_id": marker.get("campaign_id"),
+        "authorization_sha256": marker.get("authorization_sha256"),
+        "timing_tolerance_days": float(TIMING_TOLERANCE_DAYS),
+        "timing_tolerance_source": "protocol detection.timing_qualified_recovery",
+        "operating_points": {"l7": l7_thresholds, "detector": detector_thresholds},
+        "trials_rows": checked["rows"],
+        "clusters": clusters,
+        "resamples": int(resamples),
+        "per_stratum": reports,
+        "comparison": combined,
+        "practical_superiority_claim": False,
+        "authorization": None if real is None else real["binding"],
+        "denominators": denominators,
+        "denominator_policy": (
+            "protocol insufficient_data minima enforced; the frozen campaign literals "
+            "(76 nulls, 72 injections per depth per stratum) are a real-campaign requirement"
+        ),
+        "limitations": [
+            "false-positive intervals are trial-level and anti-conservative under within-quarter "
+            "dependence; they are never described as cluster-adjusted",
+            "five or fewer clusters; the resample count is not a count of independent units",
+            "0.05 is the calibration target; the achieved test rate is reported with its "
+            "interval and is never described as achieving 5 percent",
+        ],
+    }
+    metrics_sha = v2.write_json_with_sidecar(campaign / METRICS_FILENAME, metrics)
+    ledger = test_access.complete_marker(
+        campaign,
+        test_access.MARKER_ACCESS,
+        {
+            "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "campaign_id": marker.get("campaign_id"),
+            "authorization_sha256": marker.get("authorization_sha256"),
+            "source": marker.get("source"),
+            "test_rows": checked["rows"],
+            "clusters": clusters,
+            "metrics_sha256": metrics_sha,
+            "overall_status": combined["status"],
+        },
+    )
+    return {
+        "mode": MODE_SYNTHETIC,
+        "campaign_dir": str(campaign),
+        "metrics_path": str(campaign / METRICS_FILENAME),
+        "metrics_sha256": metrics_sha,
+        "trials_sha256": generation["trials_sha256"],
+        "trials_rows": checked["rows"],
+        "per_stratum": reports,
+        "comparison": combined,
+        "ledger": ledger,
+    }
 
 
 def _gated_inputs(effective, out_dir, manifest_dir, repo_root, mode):
@@ -487,10 +656,12 @@ def _evaluate(
     campaign, fitted, l7_thresholds, detector_thresholds, degenerate = _gated_inputs(
         effective, out_dir, manifest_dir, repo_root, mode
     )
-    real = _authorized_campaign(effective, manifest_dir, real_authorization)
-    # Marker, campaign and document bindings are validated *before* the claim, so a mismatched
-    # marker cannot burn the single legitimate evaluation attempt.
-    _preclaim_generation_check(campaign, real_authorization)
+    real = _authorized_campaign(effective, manifest_dir, repo_root, real_authorization)
+    # Marker, campaign, document and denominator expectations are validated *before* the claim,
+    # so a mismatched marker cannot burn the single legitimate evaluation attempt.
+    marker = _preclaim_generation_check(
+        campaign, real_authorization, None if real is None else real["expected"]
+    )
 
     # The one-shot claim is taken before the artifact is read: a second evaluation, an
     # interrupted run or a concurrent process is refused instead of re-reading the trials.
@@ -502,94 +673,32 @@ def _evaluate(
             "mode": MODE_SYNTHETIC,
             "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
             "fitted_sha256": fitted["_sha256"],
+            "campaign_id": marker.get("campaign_id"),
+            "authorization_sha256": marker.get("authorization_sha256"),
+            "source": marker.get("source"),
         },
     )
-
-    frame = load_authorized_trials(campaign)
-    checked = assert_test_trials(frame, fitted, real_authorization=real_authorization)
-    generation = runner.verify_generated_trials(campaign)
-    denominators = None
-    if checked["kind"] == "real":
-        b7g.require_generation_marker(campaign, real_authorization)
-        observed = b7g.jsonable_observed(b7g.assert_denominators(frame, real["expected"]))
-        denominators = {"expected": real["expected"], "observed": observed}
-    scored = _score_frame(
-        frame,
-        fitted,
-        campaign=campaign,
-        l7_thresholds=l7_thresholds,
-        detector_thresholds=detector_thresholds,
-    )
-
-    reports: dict[str, dict] = {}
-    comparisons: dict[str, dict] = {}
-    for stratum in checked["strata"]:
-        stratum_frame = scored[scored["noise_condition"].astype(str) == stratum].copy()
-        reasons = _insufficiency(stratum_frame)
-        report = _stratum_report(stratum_frame)
-        stratum_degenerate = [name for name in degenerate if name == stratum]
-        reports[stratum] = {**report, "not_evaluated": reasons}
-        comparisons[stratum] = _comparison(
-            stratum_frame, report, reasons, degenerate=stratum_degenerate, resamples=resamples
+    try:
+        return _run_after_claim(
+            campaign=campaign,
+            fitted=fitted,
+            gates={
+                "l7": l7_thresholds,
+                "detector": detector_thresholds,
+                "degenerate": degenerate,
+            },
+            real=real,
+            real_authorization=real_authorization,
+            marker=marker,
+            resamples=resamples,
         )
-
-    combined = v2.combine_confirmatory(comparisons)
-    metrics = {
-        "phase": "11b",
-        "stage": "B3",
-        "schema_version": 1,
-        "evaluator": EVALUATOR_NAME,
-        "mode": MODE_SYNTHETIC,
-        "protocol_sha256": v2.AUTHORIZED_PROTOCOL_SHA256,
-        "fitted_sha256": fitted["_sha256"],
-        "trials_sha256": generation["trials_sha256"],
-        "model_id": fitted["model_id"],
-        "timing_tolerance_days": float(TIMING_TOLERANCE_DAYS),
-        "timing_tolerance_source": "protocol detection.timing_qualified_recovery",
-        "operating_points": {"l7": l7_thresholds, "detector": detector_thresholds},
-        "trials_rows": checked["rows"],
-        "clusters": int(scored["quarter"].nunique()),
-        "resamples": int(resamples),
-        "per_stratum": reports,
-        "comparison": combined,
-        "practical_superiority_claim": False,
-        "authorization": None if real is None else real["binding"],
-        "denominators": denominators,
-        "denominator_policy": (
-            "protocol insufficient_data minima enforced; the frozen campaign literals "
-            "(76 nulls, 72 injections per depth per stratum) are a real-campaign requirement"
-        ),
-        "limitations": [
-            "false-positive intervals are trial-level and anti-conservative under within-quarter "
-            "dependence; they are never described as cluster-adjusted",
-            "five or fewer clusters; the resample count is not a count of independent units",
-            "0.05 is the calibration target; the achieved test rate is reported with its "
-            "interval and is never described as achieving 5 percent",
-        ],
-    }
-    metrics_sha = v2.write_json_with_sidecar(campaign / METRICS_FILENAME, metrics)
-    ledger = test_access.complete_marker(
-        campaign,
-        test_access.MARKER_ACCESS,
-        {
-            "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "test_rows": checked["rows"],
-            "clusters": int(scored["quarter"].nunique()),
-            "metrics_sha256": metrics_sha,
-            "overall_status": combined["status"],
-        },
-    )
-    return {
-        "mode": MODE_SYNTHETIC,
-        "campaign_dir": str(campaign),
-        "metrics_path": str(campaign / METRICS_FILENAME),
-        "metrics_sha256": metrics_sha,
-        "trials_sha256": generation["trials_sha256"],
-        "trials_rows": checked["rows"],
-        "per_stratum": reports,
-        "comparison": combined,
-        "ledger": ledger,
-    }
+    except Exception as exc:  # noqa: BLE001 - recorded, then re-raised unchanged
+        recorded = _record_post_claim_failure(campaign, exc, marker)
+        if recorded is None:
+            exc.add_note(
+                "the terminal failure record could not be written; the access claim is spent"
+            )
+        raise
 
 
 def _recorded_fitted_hash(campaign: Path) -> str | None:

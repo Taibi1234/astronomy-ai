@@ -1,0 +1,49 @@
+{
+  "phase": "11b",
+  "schema_version": 1,
+  "model_id": "L7_detector_plus_clean_flux",
+  "protocol_sha256": "ded2bd5eea3cfb3cbd5af0b67e439a767584b9bf508f02afe2a4b5d56a75319f",
+  "features": [
+    "snr",
+    "depth_est_ppm",
+    "sigma_ppm",
+    "std_ppm",
+    "mad_ppm",
+    "mean_flux"
+  ],
+  "dropped_features": [],
+  "imputation_medians": [
+    3.7771047454287014,
+    110.48439299506492,
+    109.28748472348188,
+    124.85502510947165,
+    78.69688201378455,
+    1.000008384828651
+  ],
+  "threshold": {
+    "threshold": 0.7561405238912393,
+    "quantile_p95": 0.7561405238912393,
+    "floor": null,
+    "floor_applied": false,
+    "scope": "L7_detector_plus_clean_flux|validation nulls",
+    "n": 84,
+    "calibration_exceedance": 0.047619047619047616,
+    "target_fpr": 0.05,
+    "comparison": ">",
+    "percentile_method": "linear",
+    "tie_rule": "smallest observed score at or above the quantile with exceedance <= target"
+  },
+  "counts": {
+    "train_rows": 1264,
+    "val_rows": 588,
+    "train_injected": 900
+  },
+  "train_fingerprint": "6e13950653aa1499840c3e7f5c8ef571b204638cdbba8f0aa40fc7daa25031fb",
+  "model_file": "model.pkl",
+  "model_sha256": "577cd73234221f23e9369a832a66f609c17f3364f2c78aa53219ff7894106f1a",
+  "environment": {
+    "python": "3.14.3",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.4"
+  }
+}

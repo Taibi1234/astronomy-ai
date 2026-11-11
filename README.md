@@ -225,6 +225,9 @@ astronomy-ai/
 ├── docs/
 │   ├── PIPELINE_STATUS.md        # which chain to run; frozen artifact hashes
 │   └── reproducibility.md
+├── webapp/
+│   ├── backend/                 # FastAPI read-only demo API (app.py)
+│   └── frontend/                # React + Vite observatory UI
 ├── pyproject.toml               # ruff config only — this is not an installable package
 └── requirements-lock.txt        # 77 pinned packages (see §9)
 ```
@@ -299,10 +302,8 @@ regeneration matches the frozen dataset); and the Phase 8 pipeline checks (extra
 depth, one code path for both classes, parent groups never cross splits, imputation fitted on train only).
 
 ```powershell
-# Still fails: pytest also collects scripts/*_test.py, which reads sys.argv at import time.
-# The fix is `testpaths = ["tests"]` in pyproject.toml; that file is protected tooling config
-# and has not been edited.
-# .\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m pytest tests -v   # scoped
+.\.venv\Scripts\python.exe -m pytest            # bare pytest works too: pyproject.toml pins testpaths = ["tests"]
 ```
 
 ### Offline reproduction (no network, uses committed artifacts only)
@@ -339,16 +340,17 @@ Back up `reports\` before running them if you want to keep the committed outputs
 | `apply_quality_mask.py`, `prepare_kepler_quarters.py` | FITS files in `data/raw/mast_cache/` (gitignored) |
 | **all other analysis scripts** (`transit_analysis.py`, `phase4_*.py`, `phase5_build_dataset.py`, and the Phase 1–2 fitters/folders) | analysis-ready CSVs in `data/processed/` (**gitignored**) |
 
-Note that `data/processed/*.csv` is excluded by `.gitignore`. A fresh clone can run only the three
-offline commands above (and only if `reports/phase5_dataset.json` and the `reports/results/*.json`
-files are present). Re-deriving the CSVs requires a MAST download, which is a network dependency.
+Note that `data/processed/*.csv` is excluded by `.gitignore`, apart from the two bundled demo light
+curves described in §12. A fresh clone can run only the three offline commands above (and only if
+`reports/phase5_dataset.json` and the `reports/results/*.json` files are present). Re-deriving the CSVs
+requires a MAST download, which is a network dependency.
 
 ---
 
 ## 9. Known issues and unresolved defects
 
-These are documented rather than fixed, because fixing them would modify analysis code or results
-without review.
+Most of these are documented rather than fixed, because fixing them would modify analysis code or results
+without review; the ones that have since been resolved are marked as such.
 
 1. **Phase 7 finding R1 is retracted.** It claimed the frozen Phase 5 features were leakage-contaminated.
    Phase 8 rebuilt the dataset from the presented-flux pipeline and matched all 26 windows exactly, so the
@@ -357,26 +359,26 @@ without review.
 2. **Phase 5's imputation statistic was fitted across splits** (median over all 26 windows, 9 values).
    Corrected in the Phase 8 pipeline with a train-only median; it changes the threshold by 0.0006 and no
    reported test metric. The frozen Phase 5 CSV was left as-is.
-3. **`scripts/statistical_validation.py` would raise `NameError`** — `moving_block_resid` and
-   `stratified_block_resid` are called but never defined. It is an incomplete proto-Phase-4 prototype,
-   superseded by `phase4_*.py`, and none of its outputs exist anywhere in the repo. Left untouched.
-4. **`pytest` at the repository root still fails collection** in `scripts/transit_control_test.py` (parses
-   `sys.argv` at import). The fix is `testpaths = ["tests"]` in `pyproject.toml`; that file is protected
-   tooling config in this harness and was not edited. Use `pytest tests`.
-5. **Lint is clean.** `ruff check scripts tests` reports **0 findings**. Two suppressions are deliberate and
-   commented: `# noqa: E402` where imports must follow `sys.path` setup, and `# noqa: F821` on the four
-   calls to the undefined helpers in `scripts/statistical_validation.py` (item 3) — the calls cannot be
-   "fixed" without inventing a statistical implementation.
+3. **`scripts/statistical_validation.py` is a superseded prototype.** Its two block-bootstrap helpers
+   (`moving_block_resid`, `stratified_block_resid`) were never implemented; they are now explicit stubs
+   that raise `NotImplementedError` with a pointer to `scripts/phase4_block_bootstrap.py`, so running the
+   script fails fast with an explanation instead of a mid-run `NameError`. None of its outputs exist
+   anywhere in the repo.
+4. **Root-level `pytest` collection is fixed.** `pyproject.toml` pins `testpaths = ["tests"]`, so a bare
+   `pytest` run no longer trips over `scripts/transit_control_test.py` (which parses `sys.argv` at
+   import). Both `pytest` and `pytest tests` work.
+5. **Lint is clean.** `ruff check scripts tests` reports **0 findings**. The remaining `# noqa: E402`
+   suppressions are deliberate and commented: imports must follow `sys.path` setup.
 6. **`reports/phase5_results.md` is now UTF-8** (converted in Phase 7 from Windows-1252; CRLF preserved,
    no replacement characters, single em dash).
 7. **Git history does not contain Phase 3–5 artifacts.** Only Phase 1–2 files are tracked. Everything
    from `reports/results/`, `reports/phase3_*`, `reports/phase4_*`, `reports/phase5_*`, the `tests/`
    directory, and the Phase 3–5 scripts is currently untracked. No commit was made in this phase.
-8. **`HOME/` (untracked tooling cache) sits in the project root** and is not covered by `.gitignore`.
-9. **Superceded artifacts remain for provenance.** Q0-only fits, the orphan Phase 1 figures, and
-   `injection_recovery.py` (which reads a `phase4_statistical_validation.json` that does not exist)
-   are kept intentionally; they are not part of the current result chain.
-10. **`pip`, `setuptools`, `wheel` are installed but deliberately not in the lock file** — they are
+8. **Superseded artifacts remain for provenance.** Q0-only fits, the orphan Phase 1 figures, and
+   `injection_recovery.py` (which falls back to a fixed 15 ppm half-window when its optional
+   `phase4_statistical_validation.json` input is absent) are kept intentionally; they are not part of
+   the current result chain.
+9. **`pip`, `setuptools`, `wheel` are installed but deliberately not in the lock file** — they are
     environment tooling, not analysis dependencies. `batman-package==2.5.3` **was** missing and has been
     added to `requirements-lock.txt` in Phase 6 (see `reports/phase6_portfolio_readiness.md`).
 
@@ -429,3 +431,173 @@ Key figures (`reports/figures/`):
 - Data provenance: MAST (Kepler long-cadence `kplr011904151-*_llc.fits`, TESS SPOC S14 120 s); per-quarter
   row counts, time ranges, and observed quality bits in `reports/kepler_quarters_metadata.json`.
 - Nothing is committed or pushed. The working tree is the deliverable.
+
+---
+
+## 12. Web application (read-only demo)
+
+A small local demo that renders the processed light curves and the saved evaluation artifacts. It is
+a viewer over existing files, not an experiment runner: it fits nothing, generates no trials, and
+changes no research data.
+
+### What each page shows
+
+- **Overview** — project configuration and the availability of the configured research artifacts.
+- **Light Curves** — flux-versus-time and phase-folded plots for the two processed datasets.
+- **AI Laboratory** — the saved Phase 5 metrics, an in-memory transit-injection preview, and the
+  saved injection-recovery benchmark.
+- **Methodology** — the project statement and the artifact inventory.
+
+### Data coverage the UI displays
+
+| Dataset | File | Valid observations | Span in the file |
+|---|---|---|---|
+| Kepler Q0 | `data/processed/kepler_kepler_10.csv` | 469 | BKJD 120.539–130.245 (9.7 d) |
+| TESS S14 | `data/processed/tess_kepler_10.csv` | 17,722 | TJD 1683.356–1710.206 (26.9 d) |
+
+**The Kepler panel is Kepler Quarter 0 only — a ~9.7-day segment, not the 15-quarter, ~4-year series
+analysed in §2–§4.** The TESS panel is a single sector. The chart requests at most 10,000 points, so
+the UI reports both the valid observations in the file (17,722) and how many are actually plotted
+(10,000, evenly subsampled).
+
+### Dataset prerequisite
+
+Unlike the rest of `data/processed/` (gitignored), these two demo light curves are **bundled with the
+repository**, so a fresh clone renders the Light Curves page immediately:
+
+| Dataset | File | Rows | SHA-256 |
+|---|---|---|---|
+| Kepler Q0 | `data/processed/kepler_kepler_10.csv` | 469 | `7dd1cb33d3dea7109db42c0277cae8f4bd3dfd1f9cf9d44e4b4c613521657854` |
+| TESS S14 | `data/processed/tess_kepler_10.csv` | 17,722 | `ac582c1cf89996ff54d3d9f9035512f8ae6adb582a8ed5feeb5517cd13838f1f` |
+
+These are the only two data files exempted in `.gitignore`. The 15-quarter analysis dataset
+(`kepler_all_quarters_quality_masked.csv`, 45,514 rows) and the `*_quality_masked.csv` variants are
+**not** bundled — this demo needs only the Q0 and S14 segments described above.
+
+**The row counts are finite-filtered, not quality-masked.** The Kepler Q0 file here keeps every cadence
+with finite normalized flux (469 of 476). The analysis-grade Q0 series additionally drops cadences with
+a non-zero mission quality bitmask and contains **439 rows**; that is a different file, and it is not
+the one this demo plots. Likewise the TESS S14 demo file removes only non-finite rows (17,722 of 19,337
+cadences) and no cadence for quality.
+
+#### Provenance
+
+Both files derive from NASA mission-pipeline products retrieved from MAST — not from community
+high-level science products (HLSPs). Neither source product is under exclusive access: Kepler is long
+past any proprietary window, and TESS has no proprietary period at all.
+
+| | Kepler Q0 | TESS S14 |
+|---|---|---|
+| Archive product | `kplr011904151-2009131105131_llc.fits` | `tess2019198215352-s0014-0000000377780790-0150-s_lc.fits` |
+| MAST observation (obsid) | `kplr011904151_lc_Q111111110111011101` (582316) | `tess2019198215352-s0014-0000000377780790-0150-s` (27432276) |
+| Target | KIC 11904151 (Kepler-10) | TIC 377780790 (Kepler-10) |
+| Pipeline | Kepler SOC, `.../soc/tags/release/9.3.21 r60196` | TESS SPOC `spoc-5.0.96-20230729` |
+| Product class | calib_level 2, 29.4 min long cadence | calib_level 3, 120 s cadence |
+| MAST `dataRights` | PUBLIC | PUBLIC |
+| Flux column | `PDCSAP_FLUX`, normalized by its median | `PDCSAP_FLUX`, normalized by its median |
+| Time system | BKJD = BJD(TDB) − 2454833.0 | TJD = BJD(TDB) − 2457000.0 |
+
+Derivation: non-finite `PDCSAP_FLUX` rows removed, then `normalized_flux = PDCSAP_FLUX /
+median(PDCSAP_FLUX)`, matching `lightkurve`'s `.remove_nans().normalize()`. Per-file row accounting,
+observed quality bits, and time ranges are in `reports/dataset_metadata.json`.
+
+Authoritative sources:
+
+- MAST data-use policy — <https://archive.stsci.edu/publishing/data-use>
+- MAST mission acknowledgements — <https://archive.stsci.edu/publishing/mission-acknowledgements>
+- TESS data products (`_lc.fits` = SPOC pipeline product) — <https://heasarc.gsfc.nasa.gov/docs/tess/data-products.html>
+- TESS FAQ (no proprietary period) — <https://heasarc.gsfc.nasa.gov/docs/tess/faq.html>
+
+#### Attribution
+
+If you publish work using these data, include the acknowledgements MAST specifies:
+
+> This paper includes data collected by the Kepler mission and obtained from the MAST data archive at
+> the Space Telescope Science Institute (STScI). Funding to US Institutions for the Kepler mission was
+> provided by the NASA Science Mission Directorate. STScI is operated by the Association of Universities
+> for Research in Astronomy, Inc., under NASA contract NAS5–26555.
+
+> This paper includes data collected with the TESS mission, obtained from the MAST data archive at the
+> Space Telescope Science Institute (STScI). Funding for US Institutions for the TESS mission is
+> provided by the NASA Explorer Program. STScI is operated by the Association of Universities for
+> Research in Astronomy, Inc., under NASA contract NAS5–26555.
+
+#### Regenerating the files
+
+The demo never re-derives or overwrites these files. They can be regenerated with
+`scripts/prepare_lightcurves.py`, which searches MAST through `lightkurve`, downloads the products into
+`data/raw/mast_cache/`, and writes both a CSV into `data/processed/` and a companion PNG into
+`reports/figures/`:
+
+```powershell
+python scripts/prepare_lightcurves.py
+```
+
+This requires **live MAST access** — the search step is an archive query, not a local cache read — and
+it takes no arguments, regenerating both targets in a single run. Because it writes into
+`data/processed/`, it overwrites the bundled files in place; confirm the SHA-256 values above
+afterwards.
+
+The 439-row analysis variant is a separate step: `scripts/apply_quality_mask.py` reads the bundled
+`kepler_kepler_10.csv` and writes `kepler_kepler_10_quality_masked.csv`. That file is an analysis
+input, is not part of this demo, and is not bundled.
+
+### Setup (PowerShell)
+
+Backend — CPython 3.14.3 is the only interpreter this application has been verified on (see
+`webapp/backend/requirements-web.txt`):
+
+```powershell
+cd C:\path\to\astronomy-ai\webapp\backend
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-web.txt
+.\.venv\Scripts\python.exe -m uvicorn app:app --port 8000
+```
+
+Start it from `webapp/backend`: `app.py` imports the neighbouring `research` package.
+
+Backend tests (run from `webapp/backend`, no environment variables needed — `conftest.py` opts the
+test suite into the runner route; the default-disabled behavior is asserted by
+`test_runner_is_disabled_by_default`):
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests -q      # 784 passed
+```
+
+Frontend — Node 20 or newer:
+
+```powershell
+cd C:\path\to\astronomy-ai\webapp\frontend
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173>. The UI calls `http://127.0.0.1:8000` (hard-coded in `src/App.tsx`), and
+the API allows CORS from `localhost:5173` and `localhost:5174`.
+
+### The execution API is disabled by default
+
+`POST /api/injection-recovery/run` starts the Phase 10 injection-recovery benchmark. In this build the
+route is **not registered** unless the operator sets:
+
+```powershell
+$env:ASTRONOMY_ENABLE_RUNNER = "1"
+```
+
+`GET /api/health` reports `runner_enabled`. With the flag unset the route returns 404, the API
+advertises only `GET` in CORS, and the UI hides the run buttons. The flag is not authentication — an
+enabled runner must never be exposed on a public or shared network.
+
+### Scientific scope and limits
+
+- **Kepler-10 b is a confirmed planet.** Nothing in this demo is a discovery, and the demo makes no
+  detection claim.
+- The Phase 5 machine-learning result is **exploratory and synthetic-only**: 26 windows, a
+  seven-window test set, and a test F1 of 0.75 — identical to the no-skill baseline of 0.75. ROC-AUC
+  is 0.667. It is presented as a methodology exercise, not as evidence of real-world detection
+  capability.
+- The transit-injection preview is computed in memory from the bundled CSV. It does not reproduce
+  the Phase 5 experiment and trains or evaluates no model.
+- The injection-recovery numbers come from a saved synthetic-injection run; they do not establish
+  detection performance on real observations.
+- Known unresolved issues are listed in §9.

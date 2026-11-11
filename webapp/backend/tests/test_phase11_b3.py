@@ -255,6 +255,9 @@ def test_tampered_trials_are_refused_and_the_claim_is_terminal(effective, campai
 
     assert test_access.marker_state(campaign, test_access.MARKER_ACCESS) == "started"
     assert not (campaign / b3.METRICS_FILENAME).exists()
+    failure = json.loads((campaign / b3.FAILURE_FILENAME).read_text(encoding="utf-8"))
+    assert failure["failure_type"] == "IntegrityError"
+    assert failure["status"] == "failed_after_access_claim"
     assert len(_refusals(audit)) == 1
     assert _refusals(audit)[0]["gate"] == "IntegrityError"
 

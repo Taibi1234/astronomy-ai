@@ -85,9 +85,9 @@ def protocol(stage0):
 
 @pytest.fixture(scope="module")
 def windows():
-    return json.loads(
-        (MANIFEST_DIR / "windows_primary.json").read_text(encoding="utf-8")
-    )["windows"]
+    return json.loads((MANIFEST_DIR / "windows_primary.json").read_text(encoding="utf-8"))[
+        "windows"
+    ]
 
 
 # --- stage 0: protocol -------------------------------------------------------
@@ -446,7 +446,6 @@ def test_protocol_frozen_against_other_manifests_is_refused(tmp_path):
             trials=_trial_frame(splits=("test",)),
             manifest_dir=MANIFEST_DIR,
         )
-
 
 
 def test_sidecar_hashes_match_raw_file_bytes(tmp_path):

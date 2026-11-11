@@ -1,0 +1,17 @@
+{
+  "source_hashes": {
+    "kepler": "7dd1cb33d3dea7109db42c0277cae8f4bd3dfd1f9cf9d44e4b4c613521657854",
+    "tess": "ac582c1cf89996ff54d3d9f9035512f8ae6adb582a8ed5feeb5517cd13838f1f"
+  },
+  "seed": 20261022,
+  "python": "3.14.3",
+  "platform": "Windows-11-10.0.22621-SP0",
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "batman": "2.5.1"
+  },
+  "git_commit": "5ef9df6",
+  "command": "python -m research.run_experiment --mode smoke"
+}
