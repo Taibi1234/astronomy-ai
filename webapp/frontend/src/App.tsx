@@ -29,6 +29,9 @@ type Page = "Overview" | "Light Curves" | "AI Laboratory" | "Methodology";
 type Mission = "kepler" | "tess";
 type ChartMode = "time" | "phase";
 
+const REPOSITORY_URL = "https://github.com/Taibi1234/astronomy-ai";
+const repositoryFile = (path: string) => `${REPOSITORY_URL}/blob/main/${path}`;
+
 type LightCurvePoint = {
   time: number;
   normalized_flux: number;
@@ -1900,27 +1903,296 @@ function App() {
           )}
 
           {page === "Methodology" && (
-            <section className="workspace-card">
-              <div className="workspace-icon"><BookOpen size={23} /></div>
-              <h2>Methods and reproducibility</h2>
-              <p>
-                {project?.purpose ??
-                  "Project description will load when the API is available."}
-              </p>
-              <p className="scientific-notice">
-                {project?.scientific_notice ??
-                  "Scientific interpretation must be supported by verified data."}
-              </p>
-              <h3>Configured research files</h3>
-              <ul className="method-list">
-                {artifacts.map((artifact) => (
-                  <li key={artifact.path}>
-                    <span>{artifact.name}</span>
-                    <code>{artifact.available ? "available" : "missing"}</code>
+            <div className="methodology-page">
+              <section className="workspace-card method-intro">
+                <div className="workspace-icon"><BookOpen size={23} /></div>
+                <p className="eyebrow">RESEARCH METHODS / KEPLER-10 B</p>
+                <h2>Methods and reproducibility</h2>
+                <p>
+                  {project?.purpose ??
+                    "Project description will load when the API is available."}
+                </p>
+                <p className="scientific-notice">
+                  {project?.scientific_notice ??
+                    "Scientific interpretation must be supported by verified data."}
+                </p>
+                <div className="method-badges" aria-label="Research scope">
+                  <span>Known-planet re-detection</span>
+                  <span>Descriptive validation only</span>
+                  <span>{isStaticData ? "Static read-only demo" : "Local research viewer"}</span>
+                </div>
+                <nav className="method-nav" aria-label="Methodology sections">
+                  <a href="#scientific-pipeline">01 · Pipeline</a>
+                  <a href="#transit-mathematics">02 · Mathematics</a>
+                  <a href="#data-provenance">03 · Provenance</a>
+                  <a href="#ml-protocol">04 · ML protocol</a>
+                  <a href="#reproduce">05 · Reproduce</a>
+                </nav>
+              </section>
+
+              <section id="scientific-pipeline" className="method-section">
+                <div className="method-section-heading">
+                  <span>01</span>
+                  <div>
+                    <p className="eyebrow">FROM PIXELS TO VALIDATION</p>
+                    <h2>Scientific pipeline</h2>
+                  </div>
+                </div>
+                <p className="method-lead">
+                  Each stage has a defined input and output. The published ephemeris anchors the
+                  analysis, while validation tests whether the recovered signal remains stable under
+                  preprocessing and noise assumptions.
+                </p>
+                <ol className="method-pipeline">
+                  <li>
+                    <span className="method-step-number">01 / OBSERVE</span>
+                    <h3>Raw observations</h3>
+                    <p>
+                      MAST light-curve products for Kepler-10: Kepler long-cadence FITS across
+                      15 available quarters, plus TESS Sector 14 as an independent dataset.
+                    </p>
                   </li>
-                ))}
-              </ul>
-            </section>
+                  <li>
+                    <span className="method-step-number">02 / PREPARE</span>
+                    <h3>Preprocessing</h3>
+                    <p>
+                      Quality-flag and finite-value filtering, median-normalized PDCSAP flux,
+                      phase folding, and degree-2 detrending fitted only outside the transit.
+                    </p>
+                  </li>
+                  <li>
+                    <span className="method-step-number">03 / MODEL</span>
+                    <h3>Transit analysis</h3>
+                    <p>
+                      A batman transit model with four free parameters—radius ratio, timing offset,
+                      baseline, and slope—under explicitly fixed orbital geometry and limb darkening.
+                    </p>
+                  </li>
+                  <li>
+                    <span className="method-step-number">04 / CHALLENGE</span>
+                    <h3>Validation</h3>
+                    <p>
+                      Residual diagnostics, segment-aware block bootstrap, robustness grids, and
+                      synthetic injection/recovery including a zero-depth control.
+                    </p>
+                  </li>
+                </ol>
+                <p className="method-callout">
+                  <strong>No hidden discovery step.</strong> The period and epoch are published inputs.
+                  Naive ΔBIC is retained only as a descriptive fit comparison because correlated noise
+                  violates its independent-Gaussian assumption. Synthetic ML is a separate pipeline
+                  demonstration, not evidence of real-world planet detection.
+                </p>
+              </section>
+
+              <section id="transit-mathematics" className="method-section">
+                <div className="method-section-heading">
+                  <span>02</span>
+                  <div>
+                    <p className="eyebrow">SIGNAL AND EPHEMERIS</p>
+                    <h2>Transit depth and orbital period</h2>
+                  </div>
+                </div>
+                <div className="method-formula-grid">
+                  <article className="method-formula">
+                    <p className="eyebrow">FRACTIONAL LIGHT LOSS</p>
+                    <h3>Transit depth</h3>
+                    <code>δ = (F<sub>out</sub> − F<sub>in</sub>) / F<sub>out</sub></code>
+                    <code>δ<sub>ppm</sub> = δ × 10⁶</code>
+                    <code>δ ≈ (R<sub>p</sub> / R<sub>★</sub>)² = rp²</code>
+                    <p>
+                      A planet blocks a small fraction of the stellar flux. The squared radius ratio
+                      is the small-signal geometric approximation; the reported fit instead uses
+                      batman with fixed geometry and quadratic limb darkening.
+                    </p>
+                  </article>
+                  <article className="method-formula">
+                    <p className="eyebrow">REPEATING TRANSITS</p>
+                    <h3>Linear ephemeris and phase</h3>
+                    <code>T(E) = T₀ + E × P</code>
+                    <code>phase = ((t − (T₀ − BJDREF)) + P/2) mod P − P/2</code>
+                    <p>
+                      <strong>P</strong> is the time between successive transits and <strong>E</strong>
+                      is the integer orbit count. This project uses P = 0.837491225 d and
+                      T₀ = 2454964.575 BJD_TDB; phase zero is the published transit centre.
+                    </p>
+                  </article>
+                </div>
+                <p className="method-footnote">
+                  BJDREF is 2454833 for Kepler (BKJD) and 2457000 for TESS (TJD). Folding aligns
+                  repeated transits; it does not search for a new period or establish discovery
+                  significance.
+                </p>
+              </section>
+
+              <section id="data-provenance" className="method-section">
+                <div className="method-section-heading">
+                  <span>03</span>
+                  <div>
+                    <p className="eyebrow">MISSION ARCHIVE / TRACEABLE INPUTS</p>
+                    <h2>Kepler and TESS data provenance</h2>
+                  </div>
+                </div>
+                <p className="method-lead">
+                  The viewer datasets and the full analysis datasets are deliberately distinguished.
+                  A chart in this website must not be read as a reproduction of every full-baseline
+                  scientific fit.
+                </p>
+                <div className="method-source-grid">
+                  <article className="method-source">
+                    <p className="eyebrow">KEPLER / KIC 11904151</p>
+                    <h3>Long-cadence photometry</h3>
+                    <dl>
+                      <div><dt>Archive source</dt><dd>MAST Kepler FITS, PDCSAP_FLUX</dd></div>
+                      <div><dt>Cadence</dt><dd>29.4 minutes</dd></div>
+                      <div><dt>Website viewer</dt><dd>Q0 demo CSV · 469 finite-filtered rows</dd></div>
+                      <div><dt>Full analysis</dt><dd>15 quarters · 45,514 quality-masked rows</dd></div>
+                      <div><dt>Time system</dt><dd>BKJD = BJD_TDB − 2454833</dd></div>
+                    </dl>
+                    <p>
+                      The bundled Q0 viewer file is not quality-masked. The combined 15-quarter CSV is
+                      gitignored and must be re-derived for a full offline re-fit.
+                    </p>
+                  </article>
+                  <article className="method-source">
+                    <p className="eyebrow">TESS / TIC 377780790</p>
+                    <h3>Sector 14 cross-check</h3>
+                    <dl>
+                      <div><dt>Archive source</dt><dd>MAST SPOC FITS, PDCSAP_FLUX</dd></div>
+                      <div><dt>Cadence</dt><dd>120 seconds</dd></div>
+                      <div><dt>Website viewer</dt><dd>S14 demo CSV · 17,722 finite-filtered rows</dd></div>
+                      <div><dt>Scientific role</dt><dd>Independent partial cross-check</dd></div>
+                      <div><dt>Time system</dt><dd>TJD = BJD_TDB − 2457000</dd></div>
+                    </dl>
+                    <p>
+                      Only Sector 14 is used. Other sectors were not substituted after retrieval
+                      failures, and no joint Kepler+TESS fit is claimed.
+                    </p>
+                  </article>
+                </div>
+                <div className="method-inline-links">
+                  <a href={repositoryFile("reports/dataset_metadata.json")} target="_blank" rel="noreferrer">
+                    Dataset metadata and hashes <ExternalLink size={13} />
+                  </a>
+                  <a href={repositoryFile("reports/kepler_quarters_metadata.json")} target="_blank" rel="noreferrer">
+                    Kepler quarter provenance <ExternalLink size={13} />
+                  </a>
+                </div>
+              </section>
+
+              <section id="ml-protocol" className="method-section">
+                <div className="method-section-heading">
+                  <span>04</span>
+                  <div>
+                    <p className="eyebrow">SYNTHETIC-ONLY CLASSIFICATION</p>
+                    <h2>ML experiment design and limitations</h2>
+                  </div>
+                </div>
+                <ol className="method-protocol">
+                  <li>
+                    <strong>Construct labelled windows.</strong>
+                    <span>
+                      Twenty-six windows contain either no injection or a synthetic batman transit at
+                      75, 150, 225, or 300 ppm. Labels come only from that injection process.
+                    </span>
+                  </li>
+                  <li>
+                    <strong>Separate parent segments.</strong>
+                    <span>
+                      Train, validation, and test contain 13, 6, and 7 windows. No parent contiguous
+                      segment crosses a split.
+                    </span>
+                  </li>
+                  <li>
+                    <strong>Fit preprocessing on training data.</strong>
+                    <span>
+                      Seven features are computed from the presented flux. Undefined matched-filter
+                      correlations use the training-split median, not a statistic from all windows.
+                    </span>
+                  </li>
+                  <li>
+                    <strong>Freeze choices before testing.</strong>
+                    <span>
+                      Logistic regression is the baseline. The decision threshold is selected on
+                      validation predictions; RandomForest must beat the baseline validation F1 by
+                      more than 0.05. The test set is scored once.
+                    </span>
+                  </li>
+                </ol>
+                <div className="method-limitations">
+                  <h3>What the ML score cannot tell you</h3>
+                  <ul>
+                    <li>Seven test windows make F1 and ROC-AUC unstable, not reliable performance estimates.</li>
+                    <li>Injected signals use the published ephemeris, so this is easier than a blind search.</li>
+                    <li>Synthetic labels provide no evidence of generalization to real planet candidates.</li>
+                    <li>The experiment demonstrates software and evaluation discipline, not discovery capability.</li>
+                  </ul>
+                </div>
+                <a className="method-text-link" href={repositoryFile("reports/phase8_ml_pipeline_audit.md")} target="_blank" rel="noreferrer">
+                  Read the Phase 8 leakage audit and corrected protocol <ExternalLink size={13} />
+                </a>
+              </section>
+
+              <section id="reproduce" className="method-section">
+                <div className="method-section-heading">
+                  <span>05</span>
+                  <div>
+                    <p className="eyebrow">VERIFY LOCALLY / READ THE EVIDENCE</p>
+                    <h2>Reproducibility and research reports</h2>
+                  </div>
+                </div>
+                <p className="method-lead">
+                  The public website never executes these commands. To inspect the core scientific
+                  verification suite, clone the repository and run it locally with Python 3.11:
+                </p>
+                <pre className="method-code"><code>{`git clone https://github.com/Taibi1234/astronomy-ai.git
+cd astronomy-ai
+py -3.11 -m venv .venv
+.\\.venv\\Scripts\\python.exe -m pip install -r requirements-lock.txt
+.\\.venv\\Scripts\\python.exe -m pytest -q`}</code></pre>
+                <p className="method-footnote">
+                  A public clone can run the tests and report-level reproduction commands. Full
+                  15-quarter re-fits require analysis inputs that are not bundled and may overwrite
+                  reports; follow the guide and preserve existing artifacts before running them.
+                </p>
+                <div className="method-report-links">
+                  <a href={repositoryFile("docs/reproducibility.md")} target="_blank" rel="noreferrer">
+                    <span>Reproduction guide</span><ExternalLink size={14} />
+                  </a>
+                  <a href={repositoryFile("reports/phase3_transit_analysis.md")} target="_blank" rel="noreferrer">
+                    <span>Phase 3 · Transit analysis</span><ExternalLink size={14} />
+                  </a>
+                  <a href={repositoryFile("reports/phase4_statistical_validation.md")} target="_blank" rel="noreferrer">
+                    <span>Phase 4 · Statistical validation</span><ExternalLink size={14} />
+                  </a>
+                  <a href={repositoryFile("reports/phase8_ml_pipeline_audit.md")} target="_blank" rel="noreferrer">
+                    <span>Phase 8 · ML pipeline audit</span><ExternalLink size={14} />
+                  </a>
+                  <a href={repositoryFile("reports/phase10_injection_recovery_benchmark.md")} target="_blank" rel="noreferrer">
+                    <span>Phase 10 · Injection/recovery benchmark</span><ExternalLink size={14} />
+                  </a>
+                  <a href={repositoryFile("docs/PIPELINE_STATUS.md")} target="_blank" rel="noreferrer">
+                    <span>Pipeline status and frozen artifacts</span><ExternalLink size={14} />
+                  </a>
+                </div>
+              </section>
+
+              <section className="workspace-card method-artifacts">
+                <h3>Configured research files</h3>
+                <p>
+                  Availability is reported by the current read-only data source. These files document
+                  the saved analyses; their presence is not a live execution status.
+                </p>
+                <ul className="method-list">
+                  {artifacts.map((artifact) => (
+                    <li key={artifact.path}>
+                      <span>{artifact.name}</span>
+                      <code>{artifact.available ? "available" : "missing"}</code>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
           )}
 
           <footer className="footer">
