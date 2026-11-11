@@ -220,3 +220,18 @@ h1 { max-width: 550px; margin: 17px 0 12px; font: 600 clamp(25px, 3vw, 36px)/1.1
 .rec-download { padding: 6px 10px; border: 1px solid #31455c; border-radius: 6px; color: #8bd8f5; background: #0f1b2b; font-size: 10px; text-decoration: none; }
 .rec-download:hover { background: #1a3049; }
 @media (max-width: 900px) { .rec-grid { grid-template-columns: 1fr; } }
+
+/* Public static demo: comfortable touch and readable supporting copy on phones. */
+@media (max-width: 700px) {
+  .nav-item,
+  .primary-button,
+  .secondary-button,
+  .ti-reset,
+  .error-banner button,
+  .rec-download { min-height: 44px; }
+  .rec-download { display: inline-flex; align-items: center; }
+  .icon-button { width: 44px; height: 44px; }
+  select, input { min-height: 44px; }
+  .hero-copy > p, .ml-heading p, .workspace-card > p { font-size: 14px; }
+  .ml-warning p, .ml-muted, .ti-note, .ti-limitations { font-size: 12px; }
+}

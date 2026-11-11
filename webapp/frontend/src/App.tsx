@@ -6,6 +6,7 @@ import {
   Orbit, RefreshCw, Satellite, ShieldCheck
 } from "lucide-react";
 import Plot from "react-plotly.js";
+import { apiFetch, artifactUrl, isStaticData } from "./api";
 import "./App.css";
 
 type Project = {
@@ -236,7 +237,6 @@ type RecoveryStatus = {
   source?: string;
 };
 
-const API = "http://127.0.0.1:8000";
 const DEFAULT_PERIOD = 0.837491225;
 
 const DATASET_FILES: Record<Mission, string> = {
@@ -291,9 +291,9 @@ function App() {
     try {
       const [healthResponse, projectResponse, artifactResponse] =
         await Promise.all([
-          fetch(`${API}/api/health`),
-          fetch(`${API}/api/project`),
-          fetch(`${API}/api/artifacts`),
+          apiFetch(`/api/health`),
+          apiFetch(`/api/project`),
+          apiFetch(`/api/artifacts`),
         ]);
 
       if (
@@ -316,7 +316,9 @@ function App() {
     } catch {
       setApiStatus("offline");
       setError(
-        "Cannot reach the API. Start the FastAPI backend on port 8000 and retry."
+        isStaticData
+          ? "Cannot load the bundled research data. Refresh the page or retry the static request."
+          : "Cannot reach the API. Start the FastAPI backend on port 8000 and retry."
       );
     }
   }, []);
@@ -335,8 +337,8 @@ function App() {
       setCurveError("");
 
       try {
-        const response = await fetch(
-          `${API}/api/lightcurve/${mission}?max_points=10000`,
+        const response = await apiFetch(
+          `/api/lightcurve/${mission}?max_points=10000`,
           { signal: controller.signal }
         );
 
@@ -416,7 +418,7 @@ function App() {
       setMlError("");
 
       try {
-        const response = await fetch(`${API}/api/ml-results`, {
+        const response = await apiFetch(`/api/ml-results`, {
           signal: controller.signal,
         });
 
@@ -462,8 +464,8 @@ function App() {
 
         if (tiCenter !== null) params.set("center_index", String(tiCenter));
 
-        const response = await fetch(
-          `${API}/api/transit-injection?${params.toString()}`,
+        const response = await apiFetch(
+          `/api/transit-injection?${params.toString()}`,
           { signal: controller.signal }
         );
 
@@ -511,8 +513,8 @@ function App() {
     async function loadRecovery() {
       try {
         const [statusResponse, resultsResponse] = await Promise.all([
-          fetch(`${API}/api/injection-recovery/status`, { signal: controller.signal }),
-          fetch(`${API}/api/injection-recovery/results`, { signal: controller.signal }),
+          apiFetch(`/api/injection-recovery/status`, { signal: controller.signal }),
+          apiFetch(`/api/injection-recovery/results`, { signal: controller.signal }),
         ]);
 
         if (!statusResponse.ok || !resultsResponse.ok) {
@@ -552,7 +554,7 @@ function App() {
     setRecError("");
 
     try {
-      const response = await fetch(`${API}/api/injection-recovery/run`, {
+      const response = await apiFetch(`/api/injection-recovery/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode }),
@@ -595,7 +597,7 @@ function App() {
   const tiOriginalTrace = {
     x: tiX,
     y: tiPoints.map((point) => point.original),
-    type: "scattergl" as const,
+    type: "scatter" as const,
     mode: "markers" as const,
     name: "Original observations",
     marker: { size: 6, color: "#7187a0" },
@@ -607,7 +609,7 @@ function App() {
   const tiInjectedTrace = {
     x: tiX,
     y: tiPoints.map((point) => point.injected),
-    type: "scattergl" as const,
+    type: "scatter" as const,
     mode: "markers" as const,
     name: "Injected flux (simulated)",
     marker: { size: 6, color: "#e08a4b", symbol: "diamond" },
@@ -619,7 +621,7 @@ function App() {
   const tiDifferenceTrace = {
     x: tiX,
     y: tiPoints.map((point) => point.difference_ppm),
-    type: "scattergl" as const,
+    type: "scatter" as const,
     mode: "markers" as const,
     name: "Injected − original",
     marker: { size: 5, color: "#3f7f9c" },
@@ -741,7 +743,7 @@ function App() {
           <div className="top-actions">
             <span className={`status-pill ${apiStatus}`}>
               <span className="status-dot" />
-              API {apiStatus.toUpperCase()}
+              {isStaticData ? "STATIC DATA" : `API ${apiStatus.toUpperCase()}`}
             </span>
             <button
               className="icon-button"
@@ -1048,7 +1050,7 @@ function App() {
                           {
                             x: points.map((point) => point.time),
                             y: points.map((point) => point.normalized_flux),
-                            type: "scattergl",
+                            type: "scatter",
                             mode: "markers",
                             name: "Observations",
                             marker: { size: 4, opacity: 0.7 },
@@ -1090,7 +1092,7 @@ function App() {
                           {
                             x: phasePoints.map((point) => point.phase),
                             y: phasePoints.map((point) => point.flux),
-                            type: "scattergl",
+                            type: "scatter",
                             mode: "markers",
                             name: "Phase-folded observations",
                             marker: { size: 4, opacity: 0.65 },
@@ -1746,7 +1748,7 @@ function App() {
                             {
                               x: recScatter.map((p) => p.requested_depth_ppm),
                               y: recScatter.map((p) => p.recovered_depth_ppm),
-                              type: "scattergl",
+                              type: "scatter",
                               mode: "markers",
                               name: "trials",
                               marker: { size: 5, color: "#2a6f97", opacity: 0.6 },
@@ -1877,7 +1879,7 @@ function App() {
 
                     <div className="rec-downloads">
                       {Object.entries(recResults.artifacts ?? {}).map(([name, url]) => (
-                        <a key={name} className="rec-download" href={`${API}${url}`} download>
+                        <a key={name} className="rec-download" href={artifactUrl(url)} download>
                           {name}
                         </a>
                       ))}
@@ -1925,7 +1927,9 @@ function App() {
             <div>
               <Orbit size={15} /> ASTRONOMY AI <span>·</span> SCIENTIFIC RESEARCH PLATFORM
             </div>
-            <span>Local development · Data provenance matters</span>
+            <span>
+              {isStaticData ? "Static read-only demo" : "Local development"} · Data provenance matters
+            </span>
           </footer>
         </div>
       </main>

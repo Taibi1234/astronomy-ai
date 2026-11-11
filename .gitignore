@@ -1,4 +1,5 @@
 .venv/
+.venv-pages/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -15,9 +16,13 @@ data/processed/*
 !data/processed/kepler_kepler_10.csv
 !data/processed/tess_kepler_10.csv
 
-# Local environment files
+# Local environment files; the Pages mode flag contains no secrets and is tracked
 .env
 .env.*
+!webapp/frontend/.env.pages
+
+# Generated static API copies are rebuilt by the Pages workflow
+webapp/frontend/public/api/
 
 # Local agent/tooling state must never enter a commit
 HOME/

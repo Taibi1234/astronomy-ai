@@ -9,8 +9,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:pages": "npm run export:static && tsc -b && vite build --mode pages",
+    "export:static": "python ../../scripts/export_static_webapp.py",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:pages": "npm run build:pages && vite preview --mode pages"
   },
   "dependencies": {
     "lucide-react": "^1.61.0",

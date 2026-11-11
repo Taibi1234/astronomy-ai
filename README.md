@@ -14,6 +14,29 @@ methodological question rather than a discovery question:
 pipeline-validation and uncertainty-budgeting exercise: a known answer exists, so every stage
 can be checked against it instead of being asserted.
 
+**[Open the interactive observatory](https://taibi1234.github.io/astronomy-ai/)** ·
+[Reproduction guide](docs/reproducibility.md) ·
+[v1.0.0 release](https://github.com/Taibi1234/astronomy-ai/releases/tag/v1.0.0)
+
+![Astronomy AI Observatory overview with research metrics and artifact availability](docs/images/observatory-overview.png)
+
+**Built with:** Python · FastAPI · React · TypeScript · Plotly · scikit-learn · batman
+
+### Quick start
+
+Explore the public read-only demo above, or run the core verification suite locally:
+
+```powershell
+git clone https://github.com/Taibi1234/astronomy-ai.git
+cd astronomy-ai
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m pytest
+```
+
+The website's static deployment and local full-stack setup are documented in
+[§12](#12-web-application-read-only-demo) and [`webapp/frontend/README.md`](webapp/frontend/README.md).
+
 ---
 
 ## 1. Why Kepler-10 b is the validation target
@@ -439,9 +462,16 @@ Key figures (`reports/figures/`):
 
 ## 12. Web application (read-only demo)
 
-A small local demo that renders the processed light curves and the saved evaluation artifacts. It is
+A read-only demo that renders the processed light curves and the saved evaluation artifacts. It is
 a viewer over existing files, not an experiment runner: it fits nothing, generates no trials, and
 changes no research data.
+
+**Public static demo:** <https://taibi1234.github.io/astronomy-ai/>
+
+The GitHub Pages version uses JSON and allowlisted downloads exported from the committed artifacts.
+It does not contact the FastAPI backend and cannot start experiments. The local full-stack mode
+below remains available for development. See [`webapp/frontend/README.md`](webapp/frontend/README.md)
+for both workflows and the static export command.
 
 ### What each page shows
 
